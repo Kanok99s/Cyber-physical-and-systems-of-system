@@ -144,3 +144,16 @@ For open source projects, say how it is licensed.
 
 ## Project status
 If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+
+## Add Features
+* Creating an issue that describes the feature specifically and assign it to one of the developers in the team.
+* Start implementing the solution for the feature by writting code.
+* Creating a branch with a descriptive name which specifies the functionality of the feature.
+* Creating a merge request for reviewing the code with other developers.
+* Merging the code after the approval.
+
+## Bug Fixing 
+* Creating an issue with a clear description of the error and assign one of the developers.
+* Identifying the steps which lead to the error in the code and fix the issue.
+* Create a merge request for reviewing the solution.
+* After the code has been reviwed, we can merge.
