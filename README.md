@@ -156,4 +156,10 @@ If you have run out of energy or time for your project, put a note at the top of
 * Creating an issue with a clear description of the error and assign one of the developers.
 * Identifying the steps which lead to the error in the code and fix the issue.
 * Create a merge request for reviewing the solution.
-* After the code has been reviwed, we can merge.
+* After the code has been reviewed, we can merge.
+
+## Commit Messages
+* Keep the message concise and to the point.
+* Provide more context in the comment section if necessary.
+* Use the imperative mood.
+* Follow a consistent format for your commit messages throughout the project.
