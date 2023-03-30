@@ -1,0 +1,21 @@
+Start testing: Mar 31 01:39 CEST
+----------------------------------------------------------
+1/1 Testing: helloworld-Runner
+1/1 Test: helloworld-Runner
+Command: "/home/akuien/projects/2023-group-09/build/helloworld-Runner"
+Directory: /home/akuien/projects/2023-group-09/build
+"helloworld-Runner" start time: Mar 31 01:39 CEST
+Output:
+----------------------------------------------------------
+===============================================================================
+All tests passed (5 assertions in 5 test cases)
+
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"helloworld-Runner" end time: Mar 31 01:39 CEST
+"helloworld-Runner" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Mar 31 01:39 CEST
