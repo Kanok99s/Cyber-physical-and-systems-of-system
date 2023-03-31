@@ -5,7 +5,7 @@ int main(int argc, char** argv) {
     if (argc == 2) {
         int number = std::stoi(argv[1]);
         PrimeChecker pc;
-        std::cout << "Akoi Deng Akuen; " << number << " is a prime number? " << pc.isPrime(number) << std::endl;
+        std::cout << "Hello World example " << number << " is a prime number? " << pc.isPrime(number) << std::endl;
     }
     return 0;
 }
