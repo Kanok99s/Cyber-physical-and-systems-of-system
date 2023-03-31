@@ -5,12 +5,9 @@ DIT639 Cyber-Physical Systems and Systems-of-Systems group 9 project
 
 ## Description:
 This repository contains Group 9's the source files to a system that contains software features for self-driving vehicles in a data-driven way based on a video feedback for DIT639 course: Cyber Physical Systems and Systems of Systems.
-
 A more detailed description will be added after the project progresses more.
 
-
-## Getting started: 
-
+## Getting started
 
 1. To clone this repository, make sure you have an active SSH ke. To check if your SSH key is active, you can use this command: 
 
@@ -40,16 +37,22 @@ Paste the contents of your public key into the "Key" field.
  
 2. To clone the project to the right folder where you want it to be:  
 
-first create a folder: `mkdir project `
+first create a folder: 
 
-Navigate to the folder: `cd project `
+`mkdir project `
+
+Navigate to the folder: 
+
+`cd project `
 
 then clone the repository to your local machine using the git clone command: 
 
 `git clone git@git.chalmers.se:/courses/dit638/students/2023-group-09 `
 
  
-3. Navigate to the root folder of the repository using the cd command: `cd 2023-group-09 `
+3. Navigate to the root folder of the repository using the cd command: 
+
+`cd 2023-group-09 `
 
 
 4. Install and set-up Docker to be able to run the project. You can follow the instructions for installation at (https://docs.docker.com/get-docker/) and on [Docker Compose](https://docs.docker.com/compose/install/). 
@@ -71,20 +74,6 @@ More steps to be added to run the project after more progression.....
 
 ## Documents
 - [Code of conduct](https://git.chalmers.se/courses/dit638/students/2023-group-09/-/blob/main/code-of-conduct.md)
-
-
-
-```
-cd existing_repo
-git remote add origin https://git.chalmers.se/courses/dit638/students/2023-group-09.git
-git branch -M main
-git push -uf origin main
-```
-
-
-
-***
-
 
 
 ## License
