@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/helloworld-Runner.dir/TestPrimeChecker.cpp.o CMakeFiles/helloworld-Runner.dir/PrimeChecker.cpp.o -o helloworld-Runner 

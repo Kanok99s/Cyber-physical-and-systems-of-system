@@ -1,5 +1,0 @@
-/home/akuien/projects/2023-group-09/build/CMakeFiles/helloworld.dir
-/home/akuien/projects/2023-group-09/build/CMakeFiles/helloworld-Runner.dir
-/home/akuien/projects/2023-group-09/build/CMakeFiles/test.dir
-/home/akuien/projects/2023-group-09/build/CMakeFiles/edit_cache.dir
-/home/akuien/projects/2023-group-09/build/CMakeFiles/rebuild_cache.dir
