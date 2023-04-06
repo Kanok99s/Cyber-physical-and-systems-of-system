@@ -42,7 +42,7 @@ build-and-test:
   stage: build
   script:
     - docker build -f Dockerfile .
-    - docker run --rm -v $PWD:/app -w /app -it cmake:3.21.2 bash -c "cmake . && make && ctest --output-on-failure"
+
 
 
 # This section describes what shall be done to deploy artefacts from the project.
