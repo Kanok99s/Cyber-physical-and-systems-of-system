@@ -60,23 +60,3 @@ release:
   except:
     - branches
 
-# describes what shall be done on any push to any branch in repo except for new releases
-build-and-test-any-branch:
-  tags:
-    - docker-build
-  stage: build
-  script:
-    - docker build -f Dockerfile .
-
-# describes what shall be done when making a new release
-deploy-release:
-  tags:
-    - docker-build
-  stage: deploy
-  script:
-    - if [[ "$CI_COMMIT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" .;
-        docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG";
-      fi
-  only:
-    - tags
