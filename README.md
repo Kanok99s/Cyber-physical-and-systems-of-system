@@ -1,11 +1,8 @@
 # 2023-group-09
 
 
-[![Pipeline Status](https://git.chalmers.se/courses/dit638/students/2023-group-09/badges/master/pipeline.svg)](https://git.chalmers.se/courses/dit638/students/2023-group-09/-/commits/master)
+[![Pipeline Status](https://git.chalmers.se/courses/dit638/students/2023-group-09/badges/main/pipeline.svg)](https://git.chalmers.se/courses/dit638/students/2023-group-09/-/commits/master)
 
-
-### Latest release:
-[![Latest Release](https://img.shields.io/github/release/<namespace>/<project>.svg)](https://git.chalmers.se/courses/dit638/students/2023-group-09/-/releases)
 
 ## Name
 DIT639 Cyber-Physical Systems and Systems-of-Systems group 9 project
