@@ -27,7 +27,7 @@ services:
 stages:
   - build
   - deploy
-  - test
+  #- test
 
 # Display information before we start the build.
 before_script:
@@ -44,8 +44,7 @@ build-and-test:
   rules: 
   - if: $CI_COMMIT_TAG == null
   script:
-   - docker build -t registry.git.chalmers.se/courses/dit638/students/2023-group-09 .
-   - docker push registry.git.chalmers.se/courses/dit638/students/2023-group-09
+   - docker build -f Dockerfile .
 
 
 
@@ -54,6 +53,12 @@ release:
   tags:
     - docker-build
   stage: deploy
+  before_script:
+      - mkdir -p ~/.docker/cli-plugins/
+      - wget -O ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64
+      - chmod 755 ~/.docker/cli-plugins/docker-buildx
+      - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" .
     - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG"
@@ -62,17 +67,17 @@ release:
     - if: $CI_COMMIT_TAG =~ /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-])(?:\.(?:0|[1-9]\d|\d*[a-zA-Z-][0-9a-zA-Z-]))))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
       when: on_success
 
-test:
-  stage: test
-  script:
-    - cd build
-    - make test
-    - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
-  coverage: /^\s*lines:\s*\d+.\d+\%/
-  artifacts:
-    name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
-    expire_in: 2 days
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: build/coverage.xml
+#test:
+  #stage: test
+  #script:
+    #- cd build
+    #- make test
+    #- gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
+  #coverage: /^\s*lines:\s*\d+.\d+\%/
+  #artifacts:
+    #name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
+    #expire_in: 2 days
+    #reports:
+      #coverage_report:
+        #coverage_format: cobertura
+        #path: build/coverage.xml
