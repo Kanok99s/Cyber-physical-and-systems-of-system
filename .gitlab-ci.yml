@@ -65,9 +65,11 @@ release:
       - chmod 755 ~/.docker/cli-plugins/docker-buildx
       - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
-
-  rules:   # only be executed when the tags follow semantic versioning
-      - if: $CI_COMMIT_TAG =~ /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-])(?:\.(?:0|[1-9]\d|\d*[a-zA-Z-][0-9a-zA-Z-]))))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+  only:
+    refs:
+      - tags
+    variables:
+      - $CI_COMMIT_TAG =~ /^v\d+.\d+.\d+$/
 
   script:
     - docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" .
