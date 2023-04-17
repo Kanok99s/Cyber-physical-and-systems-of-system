@@ -1,5 +1,4 @@
 
-
 <div align="center">
 
 ## Cyber Physical and systems of systems(DIT639)
@@ -24,7 +23,7 @@ Our mission is to work together as a unified team and be able to successfully co
     - Zoom for meeting  
     - Discord as main communication channel
 ----
-- To organize our work, we plan on using Scrum. Each sprint will be 2 weeks long. We will have sprint planning, sprint reviews, sprint retrospectives every other Friday, we will also elect a new product owner and scrum master. Daily Stand-ups will be conducted on zoom. 
+- To organize our work, we plan on using Scrum. Each sprint will be 2 weeks long. We will have sprint planning, sprint reviews, sprint retrospectives every other Monday, we will also elect a new product owner and scrum master. Daily Stand-ups will be conducted on zoom. 
 
 
 - During sprint planning we will decide on the sprint backlog. The items in the sprint backlog will be divided amongst the team members. When someone starts working on a task, the item should be moved from the “sprint backlog” column to the “doing” column. Once they are done, they will move it to the “review” column where it will be reviewed and approved by the scrum master and product owner before it is moved to the “Done” list. 
@@ -50,13 +49,25 @@ Our mission is to work together as a unified team and be able to successfully co
 
 ### Communication 
 
+- For in-person meetings, we intend to mainly use it for synchronisation of the project, help other members to fix their issues if there are any(pair programming), and other things that we deem necessary and requrie all members to be present(i.e. prepare for presentation, etc).
+- For online meeting, we intend to use it for daily stand-ups, quick discussions that are urgent and discusing minor obstacles(if it can't be solved then we can arrage for an in-person meeting to discuss it together)
+
 - Via Discord, Zoom, or physically, in case of emergency via phone.  
 
 - How often?- Whenever needed on Discord 
 
-- Daily stand-ups on Wednesdays, Tuesday and Friday. 
+- Communication via Discord? 
 
-- Long Meeting twice a week on Mondays and Thursdays. 
+- Having discussions regarding the time and location of the meetings 
+- Sharing resources
+- Daily updates of individual progress
+- Discussing minor obstacles 
+- Using voice channel of discord for urgent meetings 
+
+
+- Daily stand-ups on Wednesdays, Tuesday and Friday via Zoom.
+
+- Long Meeting twice a week on Mondays and Thursdays on-site and online.
 
 ### Participation in Project work 
 
