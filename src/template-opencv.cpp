@@ -85,66 +85,67 @@ int32_t main(int32_t argc, char **argv) {
                     cv::Mat wrapped(HEIGHT, WIDTH, CV_8UC4, sharedMemory->data());
                     img = wrapped.clone();
                 }
+                cluon::data::TimeStamp now{cluon::time::now()};
+
+                int dd = (cluon::time::toMicroseconds(now)) / 1000000;
+                std::uint32_t time_date_stamp = dd;
+
+                std::time_t temp = time_date_stamp;
+                std::tm* t = std::gmtime(&temp);
+                t->tm_hour += 2;
+                std::stringstream ss;
+                ss << std::put_time(t, "%Y-%m-%dT%H:%M:%SZ");
+                std::string output = ss.str();
+
                 //===========================================================================================================
                 // TODO: Here, you can add some code to check the sampleTimePoint when the current frame was captured.
                 std::pair<bool, cluon::data::TimeStamp> imageTime = sharedMemory->getTimeStamp();
                 // Convert the time to microseconds
                 std::string timestamp = std::to_string(cluon::time::toMicroseconds(imageTime.second));
-                //===========================================================================================================
+                //=========================================================================================================== 
+
 
                 sharedMemory->unlock();
 
+
+                // TODO: Do something with the frame.
+                // Example: Draw a red rectangle and display image.
+                std::string finalString;
+                finalString.append("Now: ");
+                finalString.append(ss.str());
+                finalString.append("; ts: ");
+
+                //===========================================================================================================
                 // TODO: Do something with the frame.
 
                 // Example: Draw a red rectangle and display image.
                 cv::rectangle(img, cv::Point(50, 50), cv::Point(100, 100), cv::Scalar(0,0,255));
 
                 cv::putText(img, //target image
-                "Akuen Akoi Deng;  ts:",
-                cv::Point(15, 25), //top-left position
+                finalString,
+                cv::Point(5, 45), //top-left position
                 cv::FONT_HERSHEY_PLAIN,
                 1.0,
                 CV_RGB(255, 255, 255), //font color
                 2);
 
-
+                
                 cv::putText(img, //target image
                 timestamp,
-                cv::Point(200, 25), //top-left position
+                cv::Point(280, 45), //top-left position
                 cv::FONT_HERSHEY_PLAIN,
                 1.0,
                 CV_RGB(255, 255, 255), //font color
                 2);
 
-                //TO COMPLETE
-                //=======================================================================================================================
-                /*
-                cluon::data::TimeStamp  utc_now = cluon::time::now();
-                cluon::data::TimeStamp timenow(utc_now.seconds());
-                std::string now = timenow.to_string();
-               
-                auto utc_now = cluon::time::now();
-
-                // Output in ISO 8601 format
-                std::string now = std::to_string(utc_now);
-                
-
-
-
-                //Timestamp code
-                cluon::data::TimeStamp timenow{cluon::time::now()};
-                std::string now = std::to_string(timenow);
-
-
                 cv::putText(img, //target image
-                now,
-                cv::Point(360, 25), //top-left position
+                "; Akuen Akoi Deng; ",
+                cv::Point(440, 45), //top-left position
                 cv::FONT_HERSHEY_PLAIN,
                 1.0,
                 CV_RGB(255, 255, 255), //font color
-                2); 
+                2);
 
-                */
                 //================================================================================================================================                
 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
