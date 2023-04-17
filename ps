@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+
+###############################################################
+# STARTER SCRIPT
+# Builds required docker images for project and starts seperate terminals for the images
+# Also opens browser to open-dlv.
+
+
+
+echo "RUNNER: Starting project terminals."
+
+# get argument
+INPUT=$1
+ 
+# check if production mode
+#if [ "$INPUT" != "dev" ]; then
+    
+    # clear dangling images
+    #docker system prune -f 
+#fi
+
+# starting open dlv on the first terminal
+gnome-terminal -- bash -c "bash runners/open-dlv-runner $INPUT; exec bash"
+
+# starting the decoder on the second terminal
+gnome-terminal -- bash -c "bash runners/decoder-runner $INPUT; exec bash"
+
+# starting our project/microservice on the third terminal
+gnome-terminal -- bash -c "bash runners/application-runner $INPUT; exec bash"
+
+sleep 10
+
+# Open google-chrome for playing open-dlv recordings
+echo "RUNNER: Opening browser to Open-DLV."
+
+#localhost applys to the native installed ubuntu
+google-chrome http://localhost:8081/
+
+# close this terminal
+echo "RUNNER: Closing terminal."
+
+exit 0

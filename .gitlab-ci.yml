@@ -27,7 +27,7 @@ services:
 stages:
   - build
   - deploy
-  #- test
+  - test
 
 # Display information before we start the build.
 before_script:
@@ -65,18 +65,17 @@ release:
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+.\d+.\d+$/
       when: on_success
-#test:
-  #stage: test
-  #script:
-    #- cd build
-    #- make test
-    #- gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
-  #coverage: /^\s*lines:\s*\d+.\d+\%/
-  #artifacts:
-    #name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
-    #expire_in: 2 days
-    #reports:
-      #coverage_report:
-        #coverage_format: cobertura
-        #path: build/coverage.xml
-
+test:
+  stage: test
+  script:
+    - cd build
+    - make test
+    - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
+  coverage: /^\s*lines:\s*\d+.\d+\%/
+  artifacts:
+    name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
+    expire_in: 2 days
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: build/coverage.xml
