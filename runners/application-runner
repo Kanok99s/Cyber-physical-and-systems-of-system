@@ -1,0 +1,26 @@
+#!/bin/sh
+
+###############################################################
+# APPLICATION RUNNER
+
+# terminal name
+PS1=$
+PROMPT_COMMAND=
+echo -en "\033]0; GROUP-09 APPLICATION TERMINAL\a"
+
+
+
+echo "RUNNER: Building application."
+docker build -f Dockerfile -t my-opencv-example .
+
+sleep 30
+
+# start application
+echo "RUNNER: Starting application"
+
+# using both display and verbose as from the assignment
+xhost +
+
+docker run --rm -ti --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp:/tmp my-opencv-example:latest --cid=253 --name=img --width=640 --height=480 --verbose
+
+echo "RUNNER: Docker run succesful after runs. Application windows will be terminated." && exit 0
