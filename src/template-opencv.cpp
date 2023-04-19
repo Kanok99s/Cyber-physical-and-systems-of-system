@@ -85,6 +85,8 @@ int32_t main(int32_t argc, char **argv) {
                     cv::Mat wrapped(HEIGHT, WIDTH, CV_8UC4, sharedMemory->data());
                     img = wrapped.clone();
                 }
+
+                /*
                 cluon::data::TimeStamp now{cluon::time::now()};
 
                 int dd = (cluon::time::toMicroseconds(now)) / 1000000;
@@ -102,18 +104,18 @@ int32_t main(int32_t argc, char **argv) {
                 std::pair<bool, cluon::data::TimeStamp> imageTime = sharedMemory->getTimeStamp();
                 // Convert the time to microseconds
                 std::string timestamp = std::to_string(cluon::time::toMicroseconds(imageTime.second));
-                //=========================================================================================================== 
+                //=========================================================================================================== */
 
 
                 sharedMemory->unlock();
 
 
-                // TODO: Do something with the frame.
+                /* TODO: Do something with the frame.
                 // Example: Draw a red rectangle and display image.
                 std::string finalString;
                 finalString.append("Now: ");
                 finalString.append(ss.str());
-                finalString.append("; ts: ");
+                finalString.append("; ts: "); */
 
                 //===========================================================================================================
                 // TODO: Do something with the frame.
@@ -121,6 +123,7 @@ int32_t main(int32_t argc, char **argv) {
                 // Example: Draw a red rectangle and display image.
                 cv::rectangle(img, cv::Point(50, 50), cv::Point(100, 100), cv::Scalar(0,0,255));
 
+                /*
                 cv::putText(img, //target image
                 finalString,
                 cv::Point(5, 45), //top-left position
@@ -129,7 +132,6 @@ int32_t main(int32_t argc, char **argv) {
                 CV_RGB(255, 255, 255), //font color
                 2);
 
-                
                 cv::putText(img, //target image
                 timestamp,
                 cv::Point(280, 45), //top-left position
@@ -146,7 +148,7 @@ int32_t main(int32_t argc, char **argv) {
                 CV_RGB(255, 255, 255), //font color
                 2);
 
-                //================================================================================================================================                
+                ================================================================================================================================*/                
 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
