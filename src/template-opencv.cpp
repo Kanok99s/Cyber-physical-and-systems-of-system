@@ -74,6 +74,7 @@ int32_t main(int32_t argc, char **argv) {
             while (od4.isRunning()) {
                 // OpenCV data structure to hold an image.
                 cv::Mat img;
+                cv::Mat croppedImg;
 
                 // Wait for a notification of a new frame.
                 sharedMemory->wait();
@@ -84,6 +85,7 @@ int32_t main(int32_t argc, char **argv) {
                     // Copy the pixels from the shared memory into our own data structure.
                     cv::Mat wrapped(HEIGHT, WIDTH, CV_8UC4, sharedMemory->data());
                     img = wrapped.clone();
+                    croppedImg = img(cv::Rect(0, img.rows / 2, img.cols, 120));
                 }
 
                 /*
@@ -157,8 +159,9 @@ int32_t main(int32_t argc, char **argv) {
                 }
 
                 // Display image on your screen.
-                if (VERBOSE) {
+               if (VERBOSE) {
                     cv::imshow(sharedMemory->name().c_str(), img);
+                    cv::imshow("Cropped Image", croppedImg);
                     cv::waitKey(1);
                 }
             }
