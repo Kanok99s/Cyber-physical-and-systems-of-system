@@ -24,8 +24,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-
-
 int32_t main(int32_t argc, char **argv) {
     int32_t retCode{1};
     // Parse the command line parameters as we require the user to specify some mandatory information on startup.
@@ -70,6 +68,22 @@ int32_t main(int32_t argc, char **argv) {
 
             od4.dataTrigger(opendlv::proxy::GroundSteeringRequest::ID(), onGroundSteeringRequest);
 
+            // yellow HSV values: 
+            const int MIN_HUE_YELLOW = 0;
+            const int MAX_HUE_YELLOW = 98;
+            const int MIN_SAT_YELLOW = 38;
+            const int MAX_SAT_YELLOW = 147;
+            const int MIN_VAL_YELLOW = 142;
+            const int MAX_VAL_YELLOW = 255;
+
+            // Blue HSV values
+            const int MIN_HUE_BLUE = 61; 
+            const int MAX_HUE_BLUE = 134; 
+            const int MIN_SAT_BLUE = 45; 
+            const int MAX_SAT_BLUE = 255; 
+            const int MIN_VAL_BLUE = 45;
+            const int MAX_VAL_BLUE = 255;
+
             // Endless loop; end the program by pressing Ctrl-C.
             while (od4.isRunning()) {
                 // OpenCV data structure to hold an image.
@@ -87,70 +101,12 @@ int32_t main(int32_t argc, char **argv) {
                     img = wrapped.clone();
                     croppedImg = img(cv::Rect(0, img.rows / 2, img.cols, 120));
                 }
-
-                /*
-                cluon::data::TimeStamp now{cluon::time::now()};
-
-                int dd = (cluon::time::toMicroseconds(now)) / 1000000;
-                std::uint32_t time_date_stamp = dd;
-
-                std::time_t temp = time_date_stamp;
-                std::tm* t = std::gmtime(&temp);
-                t->tm_hour += 2;
-                std::stringstream ss;
-                ss << std::put_time(t, "%Y-%m-%dT%H:%M:%SZ");
-                std::string output = ss.str();
-
-                //===========================================================================================================
                 // TODO: Here, you can add some code to check the sampleTimePoint when the current frame was captured.
-                std::pair<bool, cluon::data::TimeStamp> imageTime = sharedMemory->getTimeStamp();
-                // Convert the time to microseconds
-                std::string timestamp = std::to_string(cluon::time::toMicroseconds(imageTime.second));
-                //=========================================================================================================== */
-
-
                 sharedMemory->unlock();
 
-
-                /* TODO: Do something with the frame.
-                // Example: Draw a red rectangle and display image.
-                std::string finalString;
-                finalString.append("Now: ");
-                finalString.append(ss.str());
-                finalString.append("; ts: "); */
-
-                //===========================================================================================================
                 // TODO: Do something with the frame.
-
                 // Example: Draw a red rectangle and display image.
                 cv::rectangle(img, cv::Point(50, 50), cv::Point(100, 100), cv::Scalar(0,0,255));
-
-                /*
-                cv::putText(img, //target image
-                finalString,
-                cv::Point(5, 45), //top-left position
-                cv::FONT_HERSHEY_PLAIN,
-                1.0,
-                CV_RGB(255, 255, 255), //font color
-                2);
-
-                cv::putText(img, //target image
-                timestamp,
-                cv::Point(280, 45), //top-left position
-                cv::FONT_HERSHEY_PLAIN,
-                1.0,
-                CV_RGB(255, 255, 255), //font color
-                2);
-
-                cv::putText(img, //target image
-                "; Akuen Akoi Deng; ",
-                cv::Point(440, 45), //top-left position
-                cv::FONT_HERSHEY_PLAIN,
-                1.0,
-                CV_RGB(255, 255, 255), //font color
-                2);
-
-                ================================================================================================================================*/                
 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
@@ -170,4 +126,3 @@ int32_t main(int32_t argc, char **argv) {
     }
     return retCode;
 }
-
