@@ -115,8 +115,9 @@ int32_t main(int32_t argc, char **argv) {
                 }
 
                 // Display image on your screen.
-                if (VERBOSE) {
-                    cv::imshow(sharedMemory->name().c_str(), croppedImg);
+               if (VERBOSE) {
+                    cv::imshow(sharedMemory->name().c_str(), img);
+                    cv::imshow("Cropped Image", croppedImg);
                     cv::waitKey(1);
                 }
             }
