@@ -20,9 +20,16 @@ image: docker:19.03.3
 variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
+  BUILDX_PLATFORM: linux/amd64,linux/arm/v7,linux/arm/v6
+  DOCKER_DRIVER: overlay2
+  DOCKER_CLI_EXPERIMENTAL: enabled
+  BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64
+  BUILDX_BUILDER: platformbuilder
 
 services:
   - name: docker:19.03.3-dind
+    alias: docker
+    
 
 stages:
   - build
@@ -32,7 +39,6 @@ stages:
 # Display information before we start the build.
 before_script:
   - docker info # display system wide info about the Docker
-  - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes # runs container and resets the QEMU user emulation to run Docker images for different architectures on the same host
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
 
@@ -54,17 +60,24 @@ release:
     - docker-build
   stage: deploy
   before_script:
-      - mkdir -p ~/.docker/cli-plugins/
-      - wget -O ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64
-      - chmod 755 ~/.docker/cli-plugins/docker-buildx
-      - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+  - docker info # display system wide info about the Docker
+  - mkdir -p $HOME/.docker/cli-plugins/
+  - wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL
+  - chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+  - "echo -e '{\n  \"experimental\": \"enabled\"\n}' | tee $HOME/.docker/config.json"
+  - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes # runs container and resets the QEMU user emulation to run Docker images for different architectures on   the same host
+  - docker buildx create --use --driver docker-container --name ${BUILDX_BUILDER} --platform=${BUILDX_PLATFORM}
+  - docker buildx inspect --bootstrap ${BUILDX_BUILDER}
+  - docker buildx ls
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" .
-    - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG"
+    #- docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" .
+    #- docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG"
+    - docker buildx build --platform=${BUILDX_PLATFORM} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+.\d+.\d+$/
       when: on_success
+
 #test:
   #stage: test
   #script:
