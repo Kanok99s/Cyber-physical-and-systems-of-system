@@ -89,6 +89,7 @@ More steps to be added to run the project after more progression.....
 - Docker
 - CMake
 - docker compose
+- OpenCV
 
 ## Documents
 - [Code of conduct](https://git.chalmers.se/courses/dit638/students/2023-group-09/-/blob/main/code-of-conduct.md)
@@ -123,7 +124,7 @@ You can find a copy of the license text in the [License](https://git.chalmers.se
 
 ## Authors and acknowledgment
 * Akuen Akoi Deng 
-* Kanokwan Haesatith
-* Nazli Moghaddam
 * Cynthia Tarwireyi
+* Kanokwan Haesatith
 * Marwa Selwaye
+* Nazli Moghaddam
