@@ -14,12 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # First stage for building the software:
-FROM ubuntu:18.04 as builder
+FROM ubuntu:22.04 as builder
 LABEL maintainer="Christian Berger <christian.berger@gu.se>"
 
 ENV DEBIAN_FRONTEND noninteractive
 
-# Upgrade the Ubuntu 18.04 LTS base image
+# Upgrade the Ubuntu 22.04 LTS base image
 RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get dist-upgrade -y
@@ -41,7 +41,7 @@ RUN mkdir build && \
 
 
 # Second stage for packaging the software into a software bundle:
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 LABEL maintainer="Christian Berger <christian.berger@gu.se>"
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -51,9 +51,9 @@ RUN apt-get update -y && \
     apt-get dist-upgrade -y
 
 RUN apt-get install -y --no-install-recommends \
-        libopencv-core3.2 \
-        libopencv-highgui3.2 \
-        libopencv-imgproc3.2 
+        libopencv-core4.5 \
+        libopencv-highgui4.5 \
+        libopencv-imgproc4.5 
 
 WORKDIR /usr/bin
 COPY --from=builder /tmp/bin/template-opencv .
