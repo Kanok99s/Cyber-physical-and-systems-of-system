@@ -205,14 +205,69 @@ int32_t main(int32_t argc, char **argv) {
 
         }
 
+        // If the number of frames is larger than or equal to the fixed frame size
+        if (numberOfFrames >= maxFrames)
+        {
 
+          // Capture the image of the region of interest we defined before
+          cv::Mat centreImg = img(centerRegionOfInterest);
 
+          // converting the BRG colors of the image to HSV values for better image processing
+          cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
 
+          // Threshold the blueHsvImage based on color ranges we defined and store the result in the centerImage as an input image
+          cv::inRange(hsvCenterImg, cv::Scalar(BLUE_MIN_HUE_VALUE, BLUE_MIN_SAT_VALUE, BLUE_MIN_VAL_VALUE), cv::Scalar(BLUE_MAX_HUE_VALUE, BLUE_MAX_SAT_VALUE, BLUE_MAX_VAL_VALUE), detectCenterImg);
 
+          // Applying Gaussian blur to detectCenterImg
+          cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
 
+          // Applying dilate and erode to detectCenterImg to remove holes from foreground
 
+          // fill in small gaps in the centerImage and expand the size of the objects in the image
+          cv::dilate(detectCenterImg, detectCenterImg, 0);
+
+          // Applying erosion to avoid the appearance of overlapping objects on the cones
+          cv::erode(detectCenterImg, detectCenterImg, 0);
+
+          // finding the contours of the cones in centerImage and store them in the contours vector
+          cv::findContours(detectCenterImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+          // Create a new image to store the detected blue cones contours with the same size as center image
+          cv::Mat blueContourImg = cv::Mat::zeros(detectCenterImg.rows, detectCenterImg.cols, CV_8UC3);
+
+          bool blueConeCenter = false; // Flag for whether blue cones are detected in the image
+
+          // Loops over the contours vector
+          for (unsigned int i = 0; i < contours.size(); i++)
+          {
+
+            // If the current index of the vector has a contour area that is larger than the defined number of pixels in identifiedShape, we have a cone
+            if (cv::contourArea(contours[i]) > identifiedShape)
+            {
+              // Draws the contour of the cone on the image
+              cv::Scalar colour(255, 255, 0);
+              cv::drawContours(blueContourImg, contours, i, colour, -1, 8, hierarchy);
 
             }
+          }
+          // Pop up window used for testing
+          // If verbose is included in the command line, a window showing only the blue contours will appear
+          if (VERBOSE)
+          {
+            cv::imshow("Blue Contours", blueContourImg);
+            cv::waitKey(1);
+          }
+        }  
+
+
+
+
+
+
+
+
+
+          }
         }
         retCode = 0;
     }
