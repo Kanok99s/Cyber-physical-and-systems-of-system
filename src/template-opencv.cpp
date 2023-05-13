@@ -194,7 +194,12 @@ int32_t main(int32_t argc, char **argv) {
               // Draws the contour of the cone on the image
               cv::Scalar colour(255, 255, 0);
               cv::drawContours(rightYellowConesContourImg, contours, i, colour, -1, 8, hierarchy);
-              
+              // Set yellowConeFound totrue to indicate that we have found a flag
+              yellowConeFound = true;
+              // If yellow cones are detected, that means the car direction is clockwise and the carDirection must be set as 1
+              if (yellowConeFound == true) {
+                carDirection = 1;
+              }
             }
           }
 
