@@ -180,6 +180,24 @@ int32_t main(int32_t argc, char **argv) {
           // Applying erosion to avoid the appearance of overlapping objects on the cones
           cv::erode(detectYellowImg, detectYellowImg, 0);
 
+           // find the contours of the cones in rightImage and store in contours vector
+          cv::findContours(detectYellowImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+          // Create a new image to store the detected yellow cones contours with the same size as rightImage
+          cv::Mat rightYellowConesContourImg = cv::Mat::zeros(detectYellowImg.rows, detectYellowImg.cols, CV_8UC3);
+
+          // Loops over the contours vector
+          for (unsigned int i = 0; i < contours.size(); i++) {
+
+            // If the current index of the vector has a contour area that is larger than the defined number of pixels in identifiedShape, we have a cone
+            if (cv::contourArea(contours[i]) > identifiedShape) {
+              // Draws the contour of the cone on the image
+              cv::Scalar colour(255, 255, 0);
+              cv::drawContours(rightYellowConesContourImg, contours, i, colour, -1, 8, hierarchy);
+              
+            }
+          }
+
         }
 
 
