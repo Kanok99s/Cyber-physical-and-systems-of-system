@@ -31,20 +31,20 @@
 #include <sstream>
 
 // HSV values for yellow cones
-int YELLOW_MIN_HUE_VALUE = 0;
-int YELLOW_MAX_HUE_VALUE = 42;
+int YELLOW_MIN_HUE_VALUE = 15;
+int YELLOW_MAX_HUE_VALUE = 25;
 int YELLOW_MIN_SAT_VALUE = 75;
-int YELLOW_MAX_SAT_VALUE = 221;
-int YELLOW_MIN_VAL_VALUE = 170;
+int YELLOW_MAX_SAT_VALUE = 185;
+int YELLOW_MIN_VAL_VALUE = 147;
 int YELLOW_MAX_VAL_VALUE = 255;
 
 // HSV values for blue cones
-int BLUE_MIN_HUE_VALUE = 102;
-int BLUE_MAX_HUE_VALUE = 150;
-int BLUE_MIN_SAT_VALUE = 88;
-int BLUE_MAX_SAT_VALUE = 165;
-int BLUE_MIN_VAL_VALUE = 43;
-int BLUE_MAX_VAL_VALUE = 222;
+int BLUE_MIN_HUE_VALUE = 100;
+int BLUE_MAX_HUE_VALUE = 140;
+int BLUE_MIN_SAT_VALUE = 120;
+int BLUE_MAX_SAT_VALUE = 255;
+int BLUE_MIN_VAL_VALUE = 40;
+int BLUE_MAX_VAL_VALUE = 255;
 
 int numberOfFrames = 0; // used to count starting frames
 int maxFrames = 5;      // initial number of frames used to determine direction
@@ -404,7 +404,18 @@ int32_t main(int32_t argc, char **argv)
         actualSteering << gsr.groundSteering();
         timestamp << sMicro;
 
-    
+        // creating strings for printing
+        std::string time = " Time Stamp: ";
+        std::string calculatedGroundSteering = "Calculated Ground Steering: ";
+        std::string actualGroundSteering = " Actual Ground Steering: ";
+        std::string groundSteeringAngle = std::to_string(steeringWheelAngle);
+
+        // appending into one string to display
+        calculatedGroundSteering.append(groundSteeringAngle);
+        calculatedGroundSteering.append(calcGroundSteering.str());
+        actualGroundSteering.append(actualSteering.str());
+        time.append(timestamp.str());
+
         cv::Mat hsvImg;
         // Copy the original image to the new one
         img.copyTo(hsvImg);
@@ -416,7 +427,7 @@ int32_t main(int32_t argc, char **argv)
           double actualAngle = gsr.groundSteering();
           if (std::abs(actualAngle - steeringWheelAngle) <= allowedDeviation)
             withinRangeFrames++;
-     
+
         totalFrames++;
 
         // Displaying performance info
@@ -424,9 +435,38 @@ int32_t main(int32_t argc, char **argv)
         double percent = (double)withinRangeFrames / (double)totalFrames * 100;
         percentMsg += std::to_string(percent) + "%";
         cv::putText(img, percentMsg, cv::Point(80, 140), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
-       
 
+        // Displays information on video
+        cv::putText(img, calculatedGroundSteering, cv::Point(80, 50), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
+        cv::putText(img, actualGroundSteering, cv::Point(80, 80), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
+        cv::putText(img, time, cv::Point(80, 110), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
 
+        {
+          std::lock_guard<std::mutex> lck(gsrMutex);
+        // std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
+         std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << ";" << " car direction: " << carDirection << std::endl;
+        }
+
+        cv::Rect combinedRegionOfInterest(
+            std::min(rightRegionOfInterest.x, centerRegionOfInterest.x),
+            std::min(rightRegionOfInterest.y, centerRegionOfInterest.y),
+            std::max(rightRegionOfInterest.x + rightRegionOfInterest.width, centerRegionOfInterest.x + centerRegionOfInterest.width) - std::min(rightRegionOfInterest.x, centerRegionOfInterest.x),
+            std::max(rightRegionOfInterest.y + rightRegionOfInterest.height, centerRegionOfInterest.y + centerRegionOfInterest.height) - std::min(rightRegionOfInterest.y, centerRegionOfInterest.y));
+
+        cv::Mat overlay = img.clone();
+        cv::Rect color = cv::Rect(combinedRegionOfInterest.x, combinedRegionOfInterest.y, combinedRegionOfInterest.width, combinedRegionOfInterest.height);
+
+        cv::rectangle(overlay, color, cv::Scalar(0, 0, 255, 128), -1);
+
+        double alpha = 0.5;
+        cv::addWeighted(overlay, alpha, img, 1 - alpha, 0, img);
+
+        // Displays debug window on screen
+        if (VERBOSE)
+        {
+          cv::imshow("Main", img);
+          cv::waitKey(1);
+        }
       }
     }
     retCode = 0;
