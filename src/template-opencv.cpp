@@ -159,8 +159,9 @@ int32_t main(int32_t argc, char **argv) {
         cv::Mat hsvCenterImg;
         cv::Mat detectCenterImg;
 
-    // loop runs until frame counter is greater than the sample size of 5, used to determine direction (counterclockwise, clockwise etc...)
-        if (numberOfFrames < maxFrames){
+        // loop runs until frame counter is greater than the sample size of 5, used to determine direction (counterclockwise, clockwise etc...)
+        if (numberOfFrames < maxFrames)
+        {
 
           // Capture the image of the region of interest we defined before
           cv::Mat yellowConeImage = img(rightRegionOfInterest);
@@ -180,29 +181,34 @@ int32_t main(int32_t argc, char **argv) {
           // Applying erosion to avoid the appearance of overlapping objects on the cones
           cv::erode(detectYellowImg, detectYellowImg, 0);
 
-           // find the contours of the cones in rightImage and store in contours vector
+          // find the contours of the cones in rightImage and store in contours vector
           cv::findContours(detectYellowImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
 
           // Create a new image to store the detected yellow cones contours with the same size as rightImage
           cv::Mat rightYellowConesContourImg = cv::Mat::zeros(detectYellowImg.rows, detectYellowImg.cols, CV_8UC3);
 
           // Loops over the contours vector
-          for (unsigned int i = 0; i < contours.size(); i++) {
+          for (unsigned int i = 0; i < contours.size(); i++)
+          {
 
             // If the current index of the vector has a contour area that is larger than the defined number of pixels in identifiedShape, we have a cone
-            if (cv::contourArea(contours[i]) > identifiedShape) {
+            if (cv::contourArea(contours[i]) > identifiedShape)
+            {
+
               // Draws the contour of the cone on the image
               cv::Scalar colour(255, 255, 0);
               cv::drawContours(rightYellowConesContourImg, contours, i, colour, -1, 8, hierarchy);
+
               // Set yellowConeFound totrue to indicate that we have found a flag
               yellowConeFound = true;
+
               // If yellow cones are detected, that means the car direction is clockwise and the carDirection must be set as 1
-              if (yellowConeFound == true) {
+              if (yellowConeFound == true)
+              {
                 carDirection = 1;
               }
             }
           }
-
         }
 
         // If the number of frames is larger than or equal to the fixed frame size
@@ -248,6 +254,33 @@ int32_t main(int32_t argc, char **argv) {
               cv::Scalar colour(255, 255, 0);
               cv::drawContours(blueContourImg, contours, i, colour, -1, 8, hierarchy);
 
+              // when current steeringAngle is less than maxSteering and more than minSteering
+              if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
+              {
+
+                // If a blue cone is not yet been detected on the center
+                if (blueConeCenter == false)
+                {
+                  blueConeCenter = true; // set to true because a cone has been detected
+
+                  if (carDirection == 1)
+                  {                                  // if the car direction is clockwise
+                    steeringWheelAngle -= turnRight; // the car is turning right
+                  }
+                  else if (carDirection == -1)
+                  {                                 // If a blue cone not detected yet & car direction is counterclockwise
+                    steeringWheelAngle -= turnLeft; // the car is turning left
+                  }
+                }
+
+              } // If the current steering angle is less than steeringMin or more than steeringMax
+              else
+              {
+                // Set steeringWheelAngle to 0 (go straight, no new steering angle provided by driver)
+                blueConeCenter = true;
+                steeringWheelAngle = 0.0;
+                // std::cout << "line 386 " << steeringWheelAngle << std::endl;
+              }
             }
           }
           // Pop up window used for testing
@@ -257,15 +290,89 @@ int32_t main(int32_t argc, char **argv) {
             cv::imshow("Blue Contours", blueContourImg);
             cv::waitKey(1);
           }
-        }  
 
+          // If a blue cone is not detected on the center ROI, we check for yellow cones
+          if (blueConeCenter == false)
+          {
 
+            // converting the BRG colors of the image to HSV values for better image processing
+            cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
 
+            // Threshold the hsvCenterImg based on color ranges we defined and store the result in the detectCenterImage as an input image
+            cv::inRange(hsvCenterImg, cv::Scalar(YELLOW_MIN_HUE_VALUE, YELLOW_MIN_SAT_VALUE, YELLOW_MIN_VAL_VALUE), cv::Scalar(YELLOW_MAX_HUE_VALUE, YELLOW_MAX_SAT_VALUE, YELLOW_MAX_VAL_VALUE), detectCenterImg);
 
+            // Applying Gaussian blur to detectCenterImg
+            cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
 
+            // Applying dilate and erode to detectCenterImg to remove holes from foreground
 
+            // fill in small gaps in the centerImage and expand the size of the objects in the image
+            cv::dilate(detectCenterImg, detectCenterImg, 0);
 
+            // Applying erosion to avoid the appearance of overlapping objects on the cones
+            cv::erode(detectCenterImg, detectCenterImg, 0);
 
+            // The below will find the contours of the cones in detectLeftImg and store them in the contours vector
+            cv::findContours(detectCenterImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+            // Creates a mat object of the same size as detectCenterImg used for storing the drawn contours
+            cv::Mat yellowContourImg = cv::Mat::zeros(detectCenterImg.rows, detectCenterImg.cols, CV_8UC3);
+
+            bool yellowConeCenter = false; // Flag for whether yellow cones are detected in the image
+
+            // Loops over the contours vector
+            for (unsigned int i = 0; i < contours.size(); i++)
+            {
+              // If the current index of the vector has a contour area that is larger than the defined number of pixels in identifiedShape, we have a cone
+              if (cv::contourArea(contours[i]) > identifiedShape)
+              {
+                // Draws the contour of the cone on the image
+                cv::Scalar colour(255, 255, 0);
+                cv::drawContours(yellowContourImg, contours, i, colour, -1, 8, hierarchy);
+
+                // when current steeringAngle is less than maxSteering and more than minSteering
+                if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
+                {
+                  // If a yellow cone is not yet been detected on the center
+                  if (yellowConeCenter == false)
+                  {
+                    yellowConeCenter = true; // set to true because a cone has been detected
+
+                    if (carDirection == 1)
+                    {                                 // if the car direction is clockwise
+                      steeringWheelAngle -= turnLeft; // the car is turning left
+                    }
+                    else if (carDirection == -1)
+                    {                                  // If car direction is counterclockwise
+                      steeringWheelAngle -= turnRight; // the car is turning right
+                    }
+                  }
+
+                } // If the current steering angle is less than steeringMin or more than steeringMax
+                else
+                {
+                  // Set steeringWheelAngle to 0 (go straight, no new steering angle provided by driver)
+                  yellowConeCenter = true;
+                  steeringWheelAngle = 0.0;
+                }
+              }
+            }
+            // Pop up window used for testing
+            // If verbose is included in the command line, a window showing only the yellow contours will appear
+            if (VERBOSE)
+            {
+              cv::imshow("Yellow Contours", yellowContourImg);
+              cv::waitKey(1);
+            }
+
+            // If no blue or yellow cones have been detected in the center
+            if (yellowConeCenter == false && blueConeCenter == false)
+            {
+              // If no cones are present, the steeringWheelAngle is set to 0
+              steeringWheelAngle = 0.00;
+            }
+          }
+        }
 
           }
         }
@@ -273,3 +380,4 @@ int32_t main(int32_t argc, char **argv) {
     }
     return retCode;
 }
+
