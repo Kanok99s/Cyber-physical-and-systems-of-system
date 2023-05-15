@@ -63,7 +63,23 @@ then clone the repository to your local machine using the git clone command:
 
 `cd 2023-group-09 `
 
-4. Then build the project using the following commands:
+
+4. If you have already ubuntu installed, run these two commands to make sure everything is up tp date:
+
+`sudo apt-get update`
+
+`sudo apt-get upgrade`
+
+5. Install needed development tools(g++, CMake, Git)
+
+`sudo apt-get install build-essential cmake git`
+
+6. Install and set-up Docker to be able to run the project. You can follow the instructions for installation at (https://docs.docker.com/get-docker/) and on [Docker Compose](https://docs.docker.com/compose/install/). 
+Then to add user to the group docker use the follwoing command:
+
+`sudo usermod -aG docker $USER`
+
+7. Build the project using the following commands after making sure all needed tools are properly installed:
 
 `mkdir build`
 
@@ -73,15 +89,26 @@ then clone the repository to your local machine using the git clone command:
 
 `make`
 
-5. Install and set-up Docker to be able to run the project. You can follow the instructions for installation at (https://docs.docker.com/get-docker/) and on [Docker Compose](https://docs.docker.com/compose/install/). 
 
  6. Build the project using Docker. First, navigate to the folder containing all the source files. Then use the this command to run the build:
 
-` docker build -f Dockerfile . `
+` docker build -f Dockerfile group_09 . `
 
 
-More steps to be added to run the project after more progression..... 
+### To run the project:
 
+- Open a new terminal window and run this command: 
+
+`docker run --rm --init --net=host --name=opendlv-vehicle-view -v $PWD:/opt/vehicle-view/recordings -v /var/run/docker.sock:/var/run/docker.sock -p 8081:8081 chalmersrevere/opendlv-vehicle-view-multi:v0.0.64`
+
+- Open another terminal window and run these commands: 
+
+`xhost + `
+` docker run --rm -ti --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp:/tmp h264decoder:v0.0. --cid=253 --name=img `
+
+- Open yet, another terminal window and run this command:
+
+` docker run --rm -ti --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp:/tmp my-opencv-example:latest --cid=253 --name=img --width=640 --height=480 --verbose `
 
 ## Technologies: 
 - Linux environment(ubuntu)
@@ -90,6 +117,8 @@ More steps to be added to run the project after more progression.....
 - CMake
 - docker compose
 - OpenCV
+- OpenDLV
+- Git
 
 ## Documents
 - [Code of conduct](https://git.chalmers.se/courses/dit638/students/2023-group-09/-/blob/main/code-of-conduct.md)
@@ -99,7 +128,6 @@ More steps to be added to run the project after more progression.....
 This project is released under the [MIT License](LICENSE).
 You can find a copy of the license text in the [License](https://git.chalmers.se/courses/dit638/students/2023-group-09/-/blob/main/LICENSE)
  file included in this repository.
-
 
 
 
