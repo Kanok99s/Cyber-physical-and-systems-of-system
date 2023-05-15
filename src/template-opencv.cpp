@@ -274,33 +274,27 @@ int32_t main(int32_t argc, char **argv)
               cv::Scalar colour(255, 255, 0);
               cv::drawContours(blueContourImg, contours, i, colour, -1, 8, hierarchy);
 
+              blueConeCenter = true; // set to true because a cone has been detected
+
               // when current steeringAngle is less than maxSteering and more than minSteering
               if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
               {
 
                 // If a blue cone is not yet been detected on the center
-                if (blueConeCenter == false)
-                {
-                  blueConeCenter = true; // set to true because a cone has been detected
 
                   if (carDirection == 1)
                   {                                  // if the car direction is clockwise
-                    steeringWheelAngle -= turnRight; // the car is turning right
+                    //steeringWheelAngle -= turnRight; // the car is turning right
+                    steeringWheelAngle = (steeringWheelAngle*0.5) - turnRight;
                   }
                   else if (carDirection == -1)
                   {                                 // If a blue cone not detected yet & car direction is counterclockwise
-                    steeringWheelAngle -= turnLeft; // the car is turning left
-                  }
+                    //steeringWheelAngle -= turnLeft; // the car is turning left
+                    steeringWheelAngle = (steeringWheelAngle*0.5) - turnLeft;
+                  
                 }
 
               } // If the current steering angle is less than steeringMin or more than steeringMax
-              else
-              {
-                // Set steeringWheelAngle to 0 (go straight, no new steering angle provided by driver)
-                blueConeCenter = true;
-                steeringWheelAngle = 0.0;
-                // std::cout << "line 386 " << steeringWheelAngle << std::endl;
-              }
             }
           }
           // Pop up window used for testing
@@ -350,31 +344,27 @@ int32_t main(int32_t argc, char **argv)
                 cv::Scalar colour(255, 255, 0);
                 cv::drawContours(yellowContourImg, contours, i, colour, -1, 8, hierarchy);
 
+                yellowConeCenter = true; // set to true because a cone has been detected
+
+
                 // when current steeringAngle is less than maxSteering and more than minSteering
                 if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
                 {
                   // If a yellow cone is not yet been detected on the center
-                  if (yellowConeCenter == false)
-                  {
-                    yellowConeCenter = true; // set to true because a cone has been detected
 
                     if (carDirection == 1)
                     {                                 // if the car direction is clockwise
-                      steeringWheelAngle -= turnLeft; // the car is turning left
+                      //steeringWheelAngle -= turnLeft; // the car is turning left
+                      steeringWheelAngle = (steeringWheelAngle*0.5) - turnLeft;
                     }
                     else if (carDirection == -1)
                     {                                  // If car direction is counterclockwise
-                      steeringWheelAngle -= turnRight; // the car is turning right
+                      //steeringWheelAngle -= turnRight; // the car is turning right
+                      steeringWheelAngle = (steeringWheelAngle*0.5) - turnRight;
                     }
-                  }
+                  
 
                 } // If the current steering angle is less than steeringMin or more than steeringMax
-                else
-                {
-                  // Set steeringWheelAngle to 0 (go straight, no new steering angle provided by driver)
-                  yellowConeCenter = true;
-                  steeringWheelAngle = 0.0;
-                }
               }
             }
             // Pop up window used for testing
@@ -424,6 +414,7 @@ int32_t main(int32_t argc, char **argv)
 
         // Checking performance
           double allowedDeviation = 0.05;
+          //double allowedDeviation = 0.3;
           double actualAngle = gsr.groundSteering();
           if (std::abs(actualAngle - steeringWheelAngle) <= allowedDeviation)
             withinRangeFrames++;
@@ -443,8 +434,8 @@ int32_t main(int32_t argc, char **argv)
 
         {
           std::lock_guard<std::mutex> lck(gsrMutex);
-        // std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
-         std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << ";" << " car direction: " << carDirection << std::endl;
+          std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
+         //std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << ";" << " car direction: " << carDirection << std::endl;
         }
 
         cv::Rect combinedRegionOfInterest(
