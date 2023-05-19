@@ -53,14 +53,13 @@ int withinRangeFrames = 0;
 
 int identifiedShape = 60;     // pixel size used to determine cones
 bool yellowConeFound = false; // flag to check if blue cones have been detected, make it a bool
-
+bool equilibrium = false;
 // Variables for steering angle calculation
 float steeringWheelAngle = 0.0;
 float maxSteering = 0.3;
 float minSteering = -0.3;
 int carDirection = -1; // left car direction is negative (counterclockwise), default value
 
-// Variables for turning
 float turnRight = 0.025;
 float turnLeft = -0.025;
 
@@ -75,11 +74,13 @@ std::vector<double> actualAngles;
 std::vector<double> timestamps;
 
 // Define the region of interest by providing a rectabgular region with 4 parameter of x,y coordinates and width and height
-cv::Rect rightRegionOfInterest = cv::Rect(415, 265, 150, 125);
+cv::Rect rightRegionOfInterest = cv::Rect(505, 265, 50, 125);
 
 // Define the region of interest by providing a rectabgular region with 4 parameter of x,y coordinates and width and height
-cv::Rect centerRegionOfInterest = cv::Rect(200, 245, 230, 115);
-// cv::Rect centerRegionOfInterest = cv::Rect(200, 245, 250, 115);
+//cv::Rect centerRegionOfInterest = cv::Rect(50, 245, 270, 115);
+cv::Rect centerRegionOfInterest = cv::Rect(300, 275, 100, 90);
+//cv::Rect actualCenterRegionOfInterest = cv::Rect(300, 275, 100, 90);
+
 
 int32_t main(int32_t argc, char **argv)
 {
@@ -227,7 +228,7 @@ int32_t main(int32_t argc, char **argv)
               {
                 carDirection = 1;
               }
-            }
+            } 
           }
         }
 
@@ -248,7 +249,6 @@ int32_t main(int32_t argc, char **argv)
           cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
 
           // Applying dilate and erode to detectCenterImg to remove holes from foreground
-
           // fill in small gaps in the centerImage and expand the size of the objects in the image
           cv::dilate(detectCenterImg, detectCenterImg, 0);
 
@@ -274,27 +274,23 @@ int32_t main(int32_t argc, char **argv)
               cv::Scalar colour(255, 255, 0);
               cv::drawContours(blueContourImg, contours, i, colour, -1, 8, hierarchy);
 
-              blueConeCenter = true; // set to true because a cone has been detected
-
               // when current steeringAngle is less than maxSteering and more than minSteering
               if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
               {
 
                 // If a blue cone is not yet been detected on the center
-
-                  if (carDirection == 1)
-                  {                                  // if the car direction is clockwise
-                    //steeringWheelAngle -= turnRight; // the car is turning right
-                    steeringWheelAngle = (steeringWheelAngle*0.5) - turnRight;
-                  }
-                  else if (carDirection == -1)
-                  {                                 // If a blue cone not detected yet & car direction is counterclockwise
-                    //steeringWheelAngle -= turnLeft; // the car is turning left
-                    steeringWheelAngle = (steeringWheelAngle*0.5) - turnLeft;
-                  
+                blueConeCenter = true; // set to true because a cone has been detected
+                if (carDirection == 1)
+                {                                  // if the car direction is clockwise
+                  steeringWheelAngle -= turnRight; // the car is turning right
+                                                   //    steeringWheelAngle = (steeringWheelAngle*0.5) - turnRight;
                 }
-
-              } // If the current steering angle is less than steeringMin or more than steeringMax
+                else if (carDirection == -1)
+                {                                 // If a blue cone not detected yet & car direction is counterclockwise
+                  steeringWheelAngle -= turnLeft; // the car is turning left
+                                                  // steeringWheelAngle = (steeringWheelAngle*0.5) - turnLeft;
+                }
+              }
             }
           }
           // Pop up window used for testing
@@ -344,25 +340,21 @@ int32_t main(int32_t argc, char **argv)
                 cv::Scalar colour(255, 255, 0);
                 cv::drawContours(yellowContourImg, contours, i, colour, -1, 8, hierarchy);
 
-                yellowConeCenter = true; // set to true because a cone has been detected
-
-
                 // when current steeringAngle is less than maxSteering and more than minSteering
                 if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
                 {
                   // If a yellow cone is not yet been detected on the center
-
-                    if (carDirection == 1)
-                    {                                 // if the car direction is clockwise
-                      //steeringWheelAngle -= turnLeft; // the car is turning left
-                      steeringWheelAngle = (steeringWheelAngle*0.5) - turnLeft;
-                    }
-                    else if (carDirection == -1)
-                    {                                  // If car direction is counterclockwise
-                      //steeringWheelAngle -= turnRight; // the car is turning right
-                      steeringWheelAngle = (steeringWheelAngle*0.5) - turnRight;
-                    }
-                  
+                  yellowConeCenter = true; // set to true because a cone has been detected
+                  if (carDirection == 1)
+                  {                                 // if the car direction is clockwise
+                    steeringWheelAngle -= turnLeft; // the car is turning left
+                                                    //  steeringWheelAngle = (steeringWheelAngle*0.5) - turnLeft;
+                  }
+                  else if (carDirection == -1)
+                  {                                  // If car direction is counterclockwise
+                    steeringWheelAngle -= turnRight; // the car is turning right
+                    //  steeringWheelAngle = (steeringWheelAngle*0.5) - turnRight;
+                  }
 
                 } // If the current steering angle is less than steeringMin or more than steeringMax
               }
@@ -413,19 +405,35 @@ int32_t main(int32_t argc, char **argv)
         cv::cvtColor(hsvImg, hsvImg, cv::COLOR_BGR2HSV);
 
         // Checking performance
-          double allowedDeviation = 0.05;
-          //double allowedDeviation = 0.3;
-          double actualAngle = gsr.groundSteering();
-          if (std::abs(actualAngle - steeringWheelAngle) <= allowedDeviation)
-            withinRangeFrames++;
+        double allowedDeviation;
+        if (std::abs(steeringWheelAngle) <= 0.01)
+        {
+          allowedDeviation = 0.05;
+        }
+        else
+        {
+          allowedDeviation = 0.3 * std::abs(steeringWheelAngle);
+        }
+
+        double actualAngle = gsr.groundSteering();
+        if (std::abs(actualAngle - steeringWheelAngle) <= allowedDeviation)
+          withinRangeFrames++;
 
         totalFrames++;
 
         // Displaying performance info
         std::string percentMsg = "Performance: ";
         double percent = (double)withinRangeFrames / (double)totalFrames * 100;
-        percentMsg += std::to_string(percent) + "%";
-        cv::putText(img, percentMsg, cv::Point(80, 140), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
+        if (percent >= 40)
+        {
+          percentMsg += std::to_string(percent) + "%";
+          cv::putText(img, percentMsg, cv::Point(80, 140), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
+        }
+        else
+        {
+          percentMsg += std::to_string(percent) + "% (Insufficient frames within range)";
+          cv::putText(img, percentMsg, cv::Point(80, 140), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(255, 0, 0), 1);
+        }
 
         // Displays information on video
         cv::putText(img, calculatedGroundSteering, cv::Point(80, 50), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
@@ -434,8 +442,9 @@ int32_t main(int32_t argc, char **argv)
 
         {
           std::lock_guard<std::mutex> lck(gsrMutex);
-          std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
-         //std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << ";" << " car direction: " << carDirection << std::endl;
+          //  std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
+          std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << std::endl;
+          //   std::cout << "group_09;"  << "\t" << sMicro << "\t" << steeringWheelAngle << "\t" << gsr.groundSteering() << std::endl;
         }
 
         cv::Rect combinedRegionOfInterest(
@@ -446,11 +455,13 @@ int32_t main(int32_t argc, char **argv)
 
         cv::Mat overlay = img.clone();
         cv::Rect color = cv::Rect(combinedRegionOfInterest.x, combinedRegionOfInterest.y, combinedRegionOfInterest.width, combinedRegionOfInterest.height);
-
         cv::rectangle(overlay, color, cv::Scalar(0, 0, 255, 128), -1);
-
         double alpha = 0.5;
         cv::addWeighted(overlay, alpha, img, 1 - alpha, 0, img);
+
+        // cv::Rect greenColor = cv::Rect(actualCenterRegionOfInterest.x, actualCenterRegionOfInterest.y, actualCenterRegionOfInterest.width, actualCenterRegionOfInterest.height);
+        // cv::rectangle(overlay, greenColor, cv::Scalar(0, 255, 0, 128), -1); // Change the Scalar to (0, 255, 0, 128) for green
+        // cv::addWeighted(overlay, alpha, img, 1 - alpha, 0, img);
 
         // Displays debug window on screen
         if (VERBOSE)
