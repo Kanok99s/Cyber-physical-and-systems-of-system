@@ -27,47 +27,45 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <opencv2/imgproc/imgproc.hpp>
-// Include the string stream library to use instead of buffer
+// Include the string stream library
 #include <sstream>
 
-// HSV values for yellow cones
-int YELLOW_MIN_HUE_VALUE = 15;
-int YELLOW_MAX_HUE_VALUE = 25;
-int YELLOW_MIN_SAT_VALUE = 75;
-int YELLOW_MAX_SAT_VALUE = 185;
-int YELLOW_MIN_VAL_VALUE = 147;
-int YELLOW_MAX_VAL_VALUE = 255;
 
-// HSV values for blue cones
-int BLUE_MIN_HUE_VALUE = 100;
-int BLUE_MAX_HUE_VALUE = 140;
-int BLUE_MIN_SAT_VALUE = 120;
-int BLUE_MAX_SAT_VALUE = 255;
-int BLUE_MIN_VAL_VALUE = 40;
-int BLUE_MAX_VAL_VALUE = 255;
+/* HSV values for yellow cones */
+const cv::Scalar YELLOW_MIN(20, 100, 150);
+const cv::Scalar YELLOW_MAX(40, 255, 255);
 
-int numberOfFrames = 0; // used to count starting frames
-int maxFrames = 5;      // initial number of frames used to determine direction
+/* HSV values for blue cones */
+const cv::Scalar BLUE_MIN(100, 50, 50);
+const cv::Scalar BLUE_MAX(130, 150, 220);
+
+
+/* Define variables for frames */
+int numberOfFrames = 0;
+int maxFrames = 5;     
 int totalFrames = 0;
 int withinRangeFrames = 0;
 
-int identifiedShape = 60;     // pixel size used to determine cones
-bool yellowConeFound = false; // flag to check if blue cones have been detected, make it a bool
-float steeringWheelAngle = 0.0;
-float maxSteering = 0.3;
-float minSteering = -0.3;
-int carDirection = -1; // left car direction is negative (counterclockwise), default value
+/* Variables for steering angle calculation */
+int carDirection = -1; 
 double alpha = 0.5;
 float turnRight = 0.045;
 float turnLeft = -0.045;
+float steeringWheelAngle = 0.0;
+
+ // pixel size to determine cones
+int coneShape = 60;
+bool yellowConeFound = false;
 int blueConeCenter = 0;
 int yellowConeCenter = 0;
 
+/* Define variables for processing yellow color and center detection  */
 cv::Mat yellowHsvImage;
 cv::Mat detectYellowImg;
 cv::Mat hsvCenterImg;
 cv::Mat detectCenterImg;
 
+/* Define the region of interest by providing a rectangular region with 4 parameters: x, y coordinates, width, and height */
 cv::Rect rightROI = cv::Rect(415, 265, 150, 125);
 cv::Rect centerROI = cv::Rect(200, 245, 200, 115);
 
@@ -197,8 +195,7 @@ int32_t main(int32_t argc, char **argv)
           bool coneFound = false;
           cv::Mat yellowConeImage = img(rightROI);
           cv::cvtColor(yellowConeImage, yellowHsvImage, cv::COLOR_BGR2HSV);
-          cv::inRange(yellowHsvImage, cv::Scalar(YELLOW_MIN_HUE_VALUE, YELLOW_MIN_SAT_VALUE, YELLOW_MIN_VAL_VALUE), 
-          cv::Scalar(YELLOW_MAX_HUE_VALUE, YELLOW_MAX_SAT_VALUE, YELLOW_MAX_VAL_VALUE), detectYellowImg);
+          cv::inRange(yellowHsvImage, YELLOW_MIN, YELLOW_MAX, detectYellowImg);
           cv::GaussianBlur(detectYellowImg, detectYellowImg, cv::Size(5, 5), 0);
           cv::dilate(detectYellowImg, detectYellowImg, 0);
           cv::erode(detectYellowImg, detectYellowImg, 0);
@@ -216,8 +213,7 @@ int32_t main(int32_t argc, char **argv)
 
           cv::Mat centreImg = img(centerROI);
           cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
-          cv::inRange(hsvCenterImg, cv::Scalar(BLUE_MIN_HUE_VALUE, BLUE_MIN_SAT_VALUE, BLUE_MIN_VAL_VALUE), 
-          cv::Scalar(BLUE_MAX_HUE_VALUE, BLUE_MAX_SAT_VALUE, BLUE_MAX_VAL_VALUE), detectCenterImg);
+          cv::inRange(hsvCenterImg, BLUE_MIN, BLUE_MAX, detectCenterImg);
           cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
           cv::dilate(detectCenterImg, detectCenterImg, 0);
           cv::erode(detectCenterImg, detectCenterImg, 0);
@@ -256,8 +252,7 @@ int32_t main(int32_t argc, char **argv)
           {
 
             cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
-            cv::inRange(hsvCenterImg, cv::Scalar(YELLOW_MIN_HUE_VALUE, YELLOW_MIN_SAT_VALUE, YELLOW_MIN_VAL_VALUE), 
-            cv::Scalar(YELLOW_MAX_HUE_VALUE, YELLOW_MAX_SAT_VALUE, YELLOW_MAX_VAL_VALUE), detectCenterImg);
+            cv::inRange(hsvCenterImg, YELLOW_MIN, YELLOW_MAX , detectCenterImg);
             cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
             cv::dilate(detectCenterImg, detectCenterImg, 0);
             cv::erode(detectCenterImg, detectCenterImg, 0);
@@ -302,6 +297,12 @@ int32_t main(int32_t argc, char **argv)
 
         numberOfFrames++;
 
+
+/* --------------------------- Creating and formatting strings for printing ---------------------------- 
+Creates string stream input to be used in printing, 
+puts values in the string stream,
+creates the string variables,
+and append values to the string variables */
         std::ostringstream calcGroundSteering;
         std::ostringstream actualSteering;
         std::ostringstream timestamp;
@@ -320,9 +321,12 @@ int32_t main(int32_t argc, char **argv)
         actualGroundSteering.append(actualSteering.str());
         time.append(timestamp.str());
 
-        cv::Mat hsvImg;
-        img.copyTo(hsvImg);
-        cv::cvtColor(hsvImg, hsvImg, cv::COLOR_BGR2HSV);
+
+        /* ----------------------------------   Checking performance  ----------------------------------- 
+       Checks performance deviation based on steering wheel angle value,
+       If the absolute value of steeringWheelAngle is less than or equal to 0.01, the allowed deviation is set to 0.05,
+       if steeringWheelAngle is greater than 0.01, the allowed deviation is 0.3(percentage of deviation allowed)
+       and updates the number of frames within range and the total frames processed, respectively */
 
         double allowedDeviation;
         if (std::abs(steeringWheelAngle) <= 0.01)
@@ -340,6 +344,12 @@ int32_t main(int32_t argc, char **argv)
 
         totalFrames++;
 
+
+         /*  -------------------------------  Displaying performance info  ------------------------------  
+        calculates the percentage of frames within the desired range 
+        and displays a performance message on the image based on the performance value.
+        Color and message varies depending on the 40% threshold of frames and if met or not */
+
         std::string percentMsg = "Performance: ";
         double percent = (double)withinRangeFrames / (double)totalFrames * 100;
         if (percent >= 40)
@@ -353,16 +363,26 @@ int32_t main(int32_t argc, char **argv)
           cv::putText(img, percentMsg, cv::Point(80, 140), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(255, 0, 0), 1);
         }
 
+
+
+         /* -------------------------------  Displays information on video  ---------------------------
+         displays various information (calculated ground steering, actual ground steering, and timestamp) on the video image,
+         and prints group number, and steering wheel angle */
+        
         cv::putText(img, calculatedGroundSteering, cv::Point(80, 50), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
         cv::putText(img, actualGroundSteering, cv::Point(80, 80), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
         cv::putText(img, time, cv::Point(80, 110), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
 
         {
           std::lock_guard<std::mutex> lck(gsrMutex);
-          //  std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
-          std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << std::endl;
-          //  std::cout << "group_09;"  << "\t" << sMicro << "\t" << steeringWheelAngle << "\t" << gsr.groundSteering() << std::endl;
+          std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
+         // std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << std::endl;
         }
+
+        cv::Mat hsvImg;
+        img.copyTo(hsvImg);
+        cv::cvtColor(hsvImg, hsvImg, cv::COLOR_BGR2HSV);
+
 
         // --------------------------------------   Display center image  ------------------------------------------------------------
         // Create a separate copy of the image to overlay, define a rectangle representing the region of interest (ROI),
