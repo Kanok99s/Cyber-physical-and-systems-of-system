@@ -17,74 +17,98 @@
 
 // Include the single-file, header-only middleware libcluon to create high-performance microservices
 #include "cluon-complete.hpp"
+
 #include "cluon-complete.cpp"
 
 // Include the OpenDLV Standard Message Set that contains messages that are usually exchanged for automotive or robotic applications
 #include "opendlv-standard-message-set.hpp"
 
-//string stream library
-#include <sstream>
 // Include the GUI and image processing header files from OpenCV
 #include <opencv2/highgui/highgui.hpp>
+
 #include <opencv2/imgproc/imgproc.hpp>
+// Include the string stream library to use instead of buffer
+#include <sstream>
 
+// HSV values for yellow cones
+int YELLOW_MIN_HUE_VALUE = 15;
+int YELLOW_MAX_HUE_VALUE = 25;
+int YELLOW_MIN_SAT_VALUE = 75;
+int YELLOW_MAX_SAT_VALUE = 185;
+int YELLOW_MIN_VAL_VALUE = 147;
+int YELLOW_MAX_VAL_VALUE = 255;
 
+// HSV values for blue cones
+int BLUE_MIN_HUE_VALUE = 100;
+int BLUE_MAX_HUE_VALUE = 140;
+int BLUE_MIN_SAT_VALUE = 120;
+int BLUE_MAX_SAT_VALUE = 255;
+int BLUE_MIN_VAL_VALUE = 40;
+int BLUE_MAX_VAL_VALUE = 255;
 
-/* HSV values for yellow cones */
-const cv::Scalar YELLOW_MIN(20, 100, 150);
-const cv::Scalar YELLOW_MAX(40, 255, 255);
-
-/* HSV values for blue cones */
-const cv::Scalar BLUE_MIN(100, 50, 50);
-const cv::Scalar BLUE_MAX(130, 150, 220);
-
-/* Variables for steering angle calculation */
-int carDir = -1;
-const float MAX_STEERING = 0.3;
-const float MIN_STEERING = -0.3;
-const float TURN_RIGHT = 0.025;
-const float TURN_LEFT = -0.025;
-float steeringAngle = 0.0;
-
-/* Define variables for processing yellow color and center detection  */
-  cv::Mat yellowHsvImage;
-  cv::Mat detectYellowImg;
-  cv::Mat hsvCenterImg;
-  cv::Mat detectCenterImg;
-
-/* Define variables for frames */
-int numberOfFrames = 0; 
-int maxFrames = 5; 
+int numberOfFrames = 0; // used to count starting frames
+int maxFrames = 5;      // initial number of frames used to determine direction
 int totalFrames = 0;
 int withinRangeFrames = 0;
 
- // pixel size to determine cones
-int coneShape = 60; 
-bool yellowConeFound = false; 
-bool equilibrium = false;
+int identifiedShape = 60;     // pixel size used to determine cones
+bool yellowConeFound = false; // flag to check if blue cones have been detected, make it a bool
+float steeringWheelAngle = 0.0;
+float maxSteering = 0.3;
+float minSteering = -0.3;
+int carDirection = -1; // left car direction is negative (counterclockwise), default value
+double alpha = 0.5;
+float turnRight = 0.025;
+float turnLeft = -0.025;
+int blueConeCenter = 0;
+int yellowConeCenter = 0;
 
-/* Vectors used for storing cone contours */
-std::vector<std::vector<cv::Point>> contours;
-std::vector<cv::Vec4i> hierarchy;
+cv::Mat yellowHsvImage;
+cv::Mat detectYellowImg;
+cv::Mat hsvCenterImg;
+cv::Mat detectCenterImg;
 
-std::vector<double> calculatedAngles;
-std::vector<double> actualAngles;
-std::vector<double> timestamps;
+cv::Rect rightROI = cv::Rect(415, 265, 150, 125);
+cv::Rect centerROI = cv::Rect(200, 245, 200, 115);
 
-/* Define the region of interest by providing a rectangular region with 4 parameters: x, y coordinates, width, and height */
-cv::Rect rightRegionOfInterest = cv::Rect(505, 265, 50, 125);
-cv::Rect centerRegionOfInterest = cv::Rect(300, 275, 100, 90);
+bool isCone(int thresh1, int thresh2, const cv::Mat &img)
+{
 
+  std::vector<std::vector<cv::Point>> contours;
+  std::vector<cv::Vec4i> hierarchy;
 
-int32_t main(int32_t argc, char **argv) {
-  int32_t retCode = 1;
+  cv::Mat cannyImg;
+  cv::Canny(img, cannyImg, thresh1, thresh2);
 
-  /* Parse the command line parameters as we require the user to specify some mandatory information on startup */
+  cv::findContours(cannyImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+  // Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
+  cv::Mat rightContourImg = cv::Mat::zeros(cannyImg.rows, cannyImg.cols, CV_8UC3);
+
+  bool coneFound = false;
+
+  for (unsigned int i = 0; i < contours.size(); i++)
+  {
+    if (cv::contourArea(contours[i]) > 60)
+    {
+
+      cv::Scalar colour(255, 0, 0);
+      cv::drawContours(rightContourImg, contours, i, colour, -1, 8, hierarchy);
+      coneFound = true;
+    }
+  }
+  return coneFound;
+}
+
+int32_t main(int32_t argc, char **argv)
+{
+  int32_t retCode{1};
+  // Parse the command line parameters as we require the user to specify some mandatory information on startup.
   auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
   if ((0 == commandlineArguments.count("cid")) ||
       (0 == commandlineArguments.count("name")) ||
       (0 == commandlineArguments.count("width")) ||
-      (0 == commandlineArguments.count("height"))) {
+      (0 == commandlineArguments.count("height")))
+  {
     std::cerr << argv[0] << " attaches to a shared memory area containing an ARGB image." << std::endl;
     std::cerr << "Usage:   " << argv[0] << " --cid=<OD4 session> --name=<name of shared memory area> [--verbose]" << std::endl;
     std::cerr << "         --cid:    CID of the OD4Session to send and receive messages" << std::endl;
@@ -92,15 +116,18 @@ int32_t main(int32_t argc, char **argv) {
     std::cerr << "         --width:  width of the frame" << std::endl;
     std::cerr << "         --height: height of the frame" << std::endl;
     std::cerr << "Example: " << argv[0] << " --cid=253 --name=img --width=640 --height=480 --verbose" << std::endl;
-  } 
-  else 
+  }
+  else
   {
-    /* Extract the values from the command line parameters */
-    const std::string NAME = commandlineArguments["name"];
-    const uint32_t WIDTH = static_cast<uint32_t>(std::stoi(commandlineArguments["width"]));
-    const uint32_t HEIGHT = static_cast<uint32_t>(std::stoi(commandlineArguments["height"]));
-    const bool VERBOSE = commandlineArguments.count("verbose") != 0;
-
+    // Extract the values from the command line parameters
+    const std::string NAME{
+        commandlineArguments["name"]};
+    const uint32_t WIDTH{
+        static_cast<uint32_t>(std::stoi(commandlineArguments["width"]))};
+    const uint32_t HEIGHT{
+        static_cast<uint32_t>(std::stoi(commandlineArguments["height"]))};
+    const bool VERBOSE{
+        commandlineArguments.count("verbose") != 0};
 
     // Attach to the shared memory.
     std::unique_ptr<cluon::SharedMemory> sharedMemory{
@@ -123,21 +150,17 @@ int32_t main(int32_t argc, char **argv) {
         // https://github.com/chrberger/libcluon/blob/master/libcluon/testsuites/TestEnvelopeConverter.cpp#L31-L40
         std::lock_guard<std::mutex> lck(gsrMutex);
         gsr = cluon::extractMessage<opendlv::proxy::GroundSteeringRequest>(std::move(env));
+        // std::cout << "lambda: groundSteering = " << gsr.groundSteering() << std::endl;
       };
-
 
       od4.dataTrigger(opendlv::proxy::GroundSteeringRequest::ID(), onGroundSteeringRequest);
 
       // Endless loop; end the program by pressing Ctrl-C.
       while (od4.isRunning())
       {
-
-        // Increase the frameCounter variable to get our sample frames for carDirection
-        numberOfFrames++;
-
+        
         // OpenCV data structure to hold an image.
         cv::Mat img;
-        cv::Mat croppedImg;
 
         // Wait for a notification of a new frame.
         sharedMemory->wait();
@@ -148,211 +171,164 @@ int32_t main(int32_t argc, char **argv) {
           // Copy the pixels from the shared memory into our own data structure.
           cv::Mat wrapped(HEIGHT, WIDTH, CV_8UC4, sharedMemory->data());
           img = wrapped.clone();
-          croppedImg = img(cv::Rect(0, 0, img.cols, img.rows - 80));
         }
 
         std::pair<bool, cluon::data::TimeStamp> sTime = sharedMemory->getTimeStamp(); // Saving current time in sTime var
-
-        // Convert TimeStamp obj into microseconds
         uint64_t sMicro = cluon::time::toMicroseconds(sTime.second);
 
         // Shared memory is unlocked
         sharedMemory->unlock();
 
-
         if (numberOfFrames < maxFrames)
         {
 
-          cv::Mat yellowConeImage = img(rightRegionOfInterest);
-
+          int thresh1 = 50;
+          int thresh2 = 150;
+          bool coneFound = false;
+          cv::Mat yellowConeImage = img(rightROI);
           cv::cvtColor(yellowConeImage, yellowHsvImage, cv::COLOR_BGR2HSV);
-
-          cv::inRange(yellowHsvImage, YELLOW_MIN, YELLOW_MAX, detectYellowImg);
-
+          cv::inRange(yellowHsvImage, cv::Scalar(YELLOW_MIN_HUE_VALUE, YELLOW_MIN_SAT_VALUE, YELLOW_MIN_VAL_VALUE), 
+          cv::Scalar(YELLOW_MAX_HUE_VALUE, YELLOW_MAX_SAT_VALUE, YELLOW_MAX_VAL_VALUE), detectYellowImg);
           cv::GaussianBlur(detectYellowImg, detectYellowImg, cv::Size(5, 5), 0);
-
           cv::dilate(detectYellowImg, detectYellowImg, 0);
           cv::erode(detectYellowImg, detectYellowImg, 0);
 
-          cv::findContours(detectYellowImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-          cv::Mat rightYellowConesContourImg = cv::Mat::zeros(detectYellowImg.rows, detectYellowImg.cols, CV_8UC3);
+          bool result = isCone(thresh1, thresh2, detectYellowImg);
 
-
-          for (unsigned int i = 0; i < contours.size(); i++)
+          if (result)
           {
-            if (cv::contourArea(contours[i]) > coneShape)
-            {
-
-              // Draws the contour of the cone on the image
-              cv::Scalar colour(255, 255, 0);
-              cv::drawContours(rightYellowConesContourImg, contours, i, colour, -1, 8, hierarchy);
-
-              yellowConeFound = true;
-
-              if (yellowConeFound == true)
-              {
-                carDir = 1;
-              }
-            } 
+            carDirection = 1;
           }
         }
-      
-        // If the number of frames is larger than or equal to the fixed frame size
+
         if (numberOfFrames >= maxFrames)
         {
 
-          cv::Mat centreImg = img(centerRegionOfInterest);
-
+          cv::Mat centreImg = img(centerROI);
           cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
-          
-          cv::inRange(hsvCenterImg, BLUE_MIN, BLUE_MAX, detectCenterImg);
-
+          cv::inRange(hsvCenterImg, cv::Scalar(BLUE_MIN_HUE_VALUE, BLUE_MIN_SAT_VALUE, BLUE_MIN_VAL_VALUE), 
+          cv::Scalar(BLUE_MAX_HUE_VALUE, BLUE_MAX_SAT_VALUE, BLUE_MAX_VAL_VALUE), detectCenterImg);
           cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
-
           cv::dilate(detectCenterImg, detectCenterImg, 0);
           cv::erode(detectCenterImg, detectCenterImg, 0);
 
-          cv::findContours(detectCenterImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+          int thresh1 = 50;
+          int thresh2 = 150;
+          bool coneFound = false;
 
-          cv::Mat blueContourImg = cv::Mat::zeros(detectCenterImg.rows, detectCenterImg.cols, CV_8UC3);
+          bool result = isCone(thresh1, thresh2, detectCenterImg);
 
-          bool blueConeCenter = false;
-
-  
-          for (unsigned int i = 0; i < contours.size(); i++)
+          if (result)
           {
-            if (cv::contourArea(contours[i]) > coneShape)
+            blueConeCenter = 1;
+
+            if (blueConeCenter == 1)
             {
-              cv::Scalar colour(255, 255, 0);
-              cv::drawContours(blueContourImg, contours, i, colour, -1, 8, hierarchy);
-
-              if (steeringAngle > MIN_STEERING && steeringAngle < MAX_STEERING)
+              if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
               {
-
-                blueConeCenter = true; 
-                if (carDir == 1)
-                {                                 
-                  steeringAngle -= TURN_RIGHT;
- 
+                if (carDirection == 1)
+                {
+                  steeringWheelAngle -= turnRight;
                 }
-                else if (carDir == -1)
-                {                                
-                  steeringAngle -= TURN_LEFT;
-          
+                else if (carDirection == -1)
+                {
+                  steeringWheelAngle -= turnLeft;
                 }
               }
             }
           }
-
-          if (VERBOSE)
+          else
           {
-            cv::imshow("Blue Contours", blueContourImg);
-            cv::waitKey(1);
+            blueConeCenter = 0;
           }
 
-          if (blueConeCenter == false)
+          if (blueConeCenter == 0)
           {
 
             cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
-    
-            cv::inRange(hsvCenterImg, YELLOW_MIN, YELLOW_MAX, detectCenterImg);
-
+            cv::inRange(hsvCenterImg, cv::Scalar(YELLOW_MIN_HUE_VALUE, YELLOW_MIN_SAT_VALUE, YELLOW_MIN_VAL_VALUE), 
+            cv::Scalar(YELLOW_MAX_HUE_VALUE, YELLOW_MAX_SAT_VALUE, YELLOW_MAX_VAL_VALUE), detectCenterImg);
             cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
-
             cv::dilate(detectCenterImg, detectCenterImg, 0);
             cv::erode(detectCenterImg, detectCenterImg, 0);
-      
-            cv::findContours(detectCenterImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
 
-            cv::Mat yellowContourImg = cv::Mat::zeros(detectCenterImg.rows, detectCenterImg.cols, CV_8UC3);
+            int thresh1 = 50;
+            int thresh2 = 150;
+            bool coneFound = false;
 
-            bool yellowConeCenter = false;
+            bool result = isCone(thresh1, thresh2, detectCenterImg);
 
-            for (unsigned int i = 0; i < contours.size(); i++)
+            if (result)
             {
-              if (cv::contourArea(contours[i]) > coneShape)
+              yellowConeCenter = 1;
+
+              if (yellowConeCenter == 1)
               {
-                cv::Scalar colour(255, 255, 0);
-                cv::drawContours(yellowContourImg, contours, i, colour, -1, 8, hierarchy);
-
-                // when current steeringAngle is less than MAX_STEERING and more than MIN_STEERING
-                if (steeringAngle > MIN_STEERING && steeringAngle < MAX_STEERING)
+                if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
                 {
-                  yellowConeCenter = true;
-                  if (carDir == 1)
-                  {                                
-                    steeringAngle -= TURN_LEFT;
-               
-                  }
-                  else if (carDir == -1)
-                  {
-                    steeringAngle -= TURN_RIGHT; 
-                  }
 
+                  if (carDirection == 1)
+                  {
+                    steeringWheelAngle -= turnLeft;
+                  }
+                  else if (carDirection == -1)
+                  {
+                    steeringWheelAngle -= turnRight;
+                  }
                 }
               }
             }
-            if (VERBOSE)
+            else
             {
-              cv::imshow("Yellow Contours", yellowContourImg);
-              cv::waitKey(1);
+              yellowConeCenter = 0;
             }
 
-            if (yellowConeCenter == false && blueConeCenter == false)
+            if (yellowConeCenter == 0 && blueConeCenter == 0)
             {
-              steeringAngle = 0.00;
+              steeringWheelAngle = 0.00;
             }
           }
         }
 
-        cv::Mat hsvImg;
-        img.copyTo(hsvImg);
-        cv::cvtColor(hsvImg, hsvImg, cv::COLOR_BGR2HSV);
-
-
-        //  ------create string stream input, put values in, to be used in printing---------
+        numberOfFrames++;
 
         std::ostringstream calcGroundSteering;
         std::ostringstream actualSteering;
         std::ostringstream timestamp;
 
-        calcGroundSteering << steeringAngle;
+        calcGroundSteering << steeringWheelAngle;
         actualSteering << gsr.groundSteering();
         timestamp << sMicro;
 
         std::string time = " Time Stamp: ";
         std::string calculatedGroundSteering = "Calculated Ground Steering: ";
         std::string actualGroundSteering = " Actual Ground Steering: ";
-        std::string groundSteeringAngle = std::to_string(steeringAngle);
+        std::string groundSteeringAngle = std::to_string(steeringWheelAngle);
 
         calculatedGroundSteering.append(groundSteeringAngle);
         calculatedGroundSteering.append(calcGroundSteering.str());
         actualGroundSteering.append(actualSteering.str());
         time.append(timestamp.str());
 
-
-
-        // --------------   Checking performance  --------------------
+        cv::Mat hsvImg;
+        img.copyTo(hsvImg);
+        cv::cvtColor(hsvImg, hsvImg, cv::COLOR_BGR2HSV);
 
         double allowedDeviation;
-        if (std::abs(steeringAngle) <= 0.01)
+        if (std::abs(steeringWheelAngle) <= 0.01)
         {
           allowedDeviation = 0.05;
         }
         else
         {
-          allowedDeviation = 0.3 * std::abs(steeringAngle);
+          allowedDeviation = 0.3 * std::abs(steeringWheelAngle);
         }
 
         double actualAngle = gsr.groundSteering();
-        if (std::abs(actualAngle - steeringAngle) <= allowedDeviation)
+        if (std::abs(actualAngle - steeringWheelAngle) <= allowedDeviation)
           withinRangeFrames++;
 
         totalFrames++;
-
-
-        // -----------  Displaying performance info  ------------
-
 
         std::string percentMsg = "Performance: ";
         double percent = (double)withinRangeFrames / (double)totalFrames * 100;
@@ -367,38 +343,26 @@ int32_t main(int32_t argc, char **argv) {
           cv::putText(img, percentMsg, cv::Point(80, 140), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(255, 0, 0), 1);
         }
 
-        // cv::Rect greenColor = cv::Rect(actualCenterRegionOfInterest.x, actualCenterRegionOfInterest.y, actualCenterRegionOfInterest.width, actualCenterRegionOfInterest.height);
-        // cv::rectangle(overlay, greenColor, cv::Scalar(0, 255, 0, 128), -1); // Change the Scalar to (0, 255, 0, 128) for green
-        // cv::addWeighted(overlay, alpha, img, 1 - alpha, 0, img);
-
-        // ----------  Displays information on video  -----------
-
         cv::putText(img, calculatedGroundSteering, cv::Point(80, 50), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
         cv::putText(img, actualGroundSteering, cv::Point(80, 80), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
         cv::putText(img, time, cv::Point(80, 110), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
 
         {
           std::lock_guard<std::mutex> lck(gsrMutex);
-          //  std::cout << "group_09;" << sMicro << ";" << steeringAngle << std::endl;
-          std::cout << "group_09;" << sMicro << ";" << steeringAngle << ";" << gsr.groundSteering() << std::endl;
-          //   std::cout << "group_09;"  << "\t" << sMicro << "\t" << steeringAngle << "\t" << gsr.groundSteering() << std::endl;
+          //  std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
+          std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << std::endl;
+          //  std::cout << "group_09;"  << "\t" << sMicro << "\t" << steeringWheelAngle << "\t" << gsr.groundSteering() << std::endl;
         }
 
-        cv::Rect combinedRegionOfInterest(
-            std::min(rightRegionOfInterest.x, centerRegionOfInterest.x),
-            std::min(rightRegionOfInterest.y, centerRegionOfInterest.y),
-            std::max(rightRegionOfInterest.x + rightRegionOfInterest.width, centerRegionOfInterest.x + centerRegionOfInterest.width) - std::min(rightRegionOfInterest.x, centerRegionOfInterest.x),
-            std::max(rightRegionOfInterest.y + rightRegionOfInterest.height, centerRegionOfInterest.y + centerRegionOfInterest.height) - std::min(rightRegionOfInterest.y, centerRegionOfInterest.y));
-
+        // --------------------------------------   Display center image  ------------------------------------------------------------
+        // Create a separate copy of the image to overlay, define a rectangle representing the region of interest (ROI),
+        // Draw a filled rectangle on the overlay image with a partially transparent red color,
+        // and then overlay the modified image onto the original image using alpha blending.
+        
         cv::Mat overlay = img.clone();
-        cv::Rect color = cv::Rect(combinedRegionOfInterest.x, combinedRegionOfInterest.y, combinedRegionOfInterest.width, combinedRegionOfInterest.height);
+        cv::Rect color = cv::Rect(centerROI.x, centerROI.y, centerROI.width, centerROI.height);
         cv::rectangle(overlay, color, cv::Scalar(0, 0, 255, 128), -1);
-        double alpha = 0.5;
         cv::addWeighted(overlay, alpha, img, 1 - alpha, 0, img);
-
-        // cv::Rect greenColor = cv::Rect(actualCenterRegionOfInterest.x, actualCenterRegionOfInterest.y, actualCenterRegionOfInterest.width, actualCenterRegionOfInterest.height);
-        // cv::rectangle(overlay, greenColor, cv::Scalar(0, 255, 0, 128), -1); // Change the Scalar to (0, 255, 0, 128) for green
-        // cv::addWeighted(overlay, alpha, img, 1 - alpha, 0, img);
 
         // Displays debug window on screen
         if (VERBOSE)
