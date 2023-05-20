@@ -367,6 +367,9 @@ int32_t main(int32_t argc, char **argv) {
           cv::putText(img, percentMsg, cv::Point(80, 140), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(255, 0, 0), 1);
         }
 
+        // cv::Rect greenColor = cv::Rect(actualCenterRegionOfInterest.x, actualCenterRegionOfInterest.y, actualCenterRegionOfInterest.width, actualCenterRegionOfInterest.height);
+        // cv::rectangle(overlay, greenColor, cv::Scalar(0, 255, 0, 128), -1); // Change the Scalar to (0, 255, 0, 128) for green
+        // cv::addWeighted(overlay, alpha, img, 1 - alpha, 0, img);
 
         // ----------  Displays information on video  -----------
 
