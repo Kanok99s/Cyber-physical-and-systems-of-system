@@ -71,6 +71,7 @@ cv::Mat detectCenterImg;
 cv::Rect rightROI = cv::Rect(415, 265, 150, 125);
 cv::Rect centerROI = cv::Rect(200, 245, 200, 115);
 
+
 bool isCone(int thresh1, int thresh2, const cv::Mat &img, const std::string& windowName)
 {
 
@@ -81,7 +82,6 @@ bool isCone(int thresh1, int thresh2, const cv::Mat &img, const std::string& win
   cv::Canny(img, cannyImg, thresh1, thresh2);
 
   cv::findContours(cannyImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-  // Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
   cv::Mat rightContourImg = cv::Mat::zeros(cannyImg.rows, cannyImg.cols, CV_8UC3);
 
   bool coneFound = false;
@@ -183,6 +183,11 @@ int32_t main(int32_t argc, char **argv)
         // Shared memory is unlocked
         sharedMemory->unlock();
 
+        // --------------------------------------   Determine car direction  ------------------------------------------------------------
+        // Capture the right side of the frame to search for yellow cones, 
+        // if a yellow cone is found, it means the car is moving in a clockwise direction,
+        // if not and there is a blue cone, the car is anti-clockwise.
+        
         if (numberOfFrames < maxFrames)
         {
 
@@ -230,8 +235,7 @@ int32_t main(int32_t argc, char **argv)
 
             if (blueConeCenter == 1)
             {
-              //if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
-              //{
+              
                 if (carDirection == 1)
                 {
                   steeringWheelAngle -= turnRight;
@@ -240,7 +244,7 @@ int32_t main(int32_t argc, char **argv)
                 {
                   steeringWheelAngle -= turnLeft;
                 }
-              //}
+              
             }
           }
           else
@@ -272,9 +276,7 @@ int32_t main(int32_t argc, char **argv)
 
               if (yellowConeCenter == 1)
               {
-                //if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
-                //{
-
+               
                   if (carDirection == 1)
                   {
                     steeringWheelAngle -= turnLeft;
@@ -283,7 +285,7 @@ int32_t main(int32_t argc, char **argv)
                   {
                     steeringWheelAngle -= turnRight;
                   }
-                //}
+               
               }
             }
             else
