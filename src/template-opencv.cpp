@@ -197,9 +197,9 @@ int32_t main(int32_t argc, char **argv)
           // -----------------------------------   Yellow cones detection -----------------------------------------------------------------
           // Conversion of the yellow cone image from the BGR color space to the HSV color space
           // Color thresholding to define the lower and upper bounds of the yelow color range
-          // Reducing noise by using Gaussian Blur function
-          // Using Dilation to improve and connect the yellow regions
-          // Applying erosion to refine the yellow regions and eliminate any small noisy areas
+          // Reduce noise with Gaussian Blur function
+          // Dilation to improve and connect the yellow regions
+          // Apply erosion to refine the yellow regions and eliminate any small noisy areas
           cv::cvtColor(yellowConeImage, yellowHsvImage, cv::COLOR_BGR2HSV);
           cv::inRange(yellowHsvImage, YELLOW_MIN, YELLOW_MAX, detectYellowImg);
           cv::GaussianBlur(detectYellowImg, detectYellowImg, cv::Size(5, 5), 0);
@@ -221,9 +221,9 @@ int32_t main(int32_t argc, char **argv)
           // -----------------------------------   Center image detection targeting the blue color range -----------------------------------------------------------------
           // Conversion of the center image from the BGR color space to the HSV color space
           // Color thresholding to define the lower and upper bounds of the blue color range
-          // Reducing noise by using Gaussian Blur function
-          // Using Dilation to improve and connect the blue regions
-          // Applying erosion to refine the blue regions and eliminate any small noisy areas
+          // Reduce noise with Gaussian Blur function
+          // Dilation to improve and connect the blue regions
+          // Apply erosion to refine the blue regions and eliminate any small noisy areas
           cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
           cv::inRange(hsvCenterImg, BLUE_MIN, BLUE_MAX, detectCenterImg);
           cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
@@ -265,9 +265,9 @@ int32_t main(int32_t argc, char **argv)
           // -----------------------------------   Center image detection targeting the yellow color range -----------------------------------------------------------------
           // Conversion of the center image from the BGR color space to the HSV color space
           // Color thresholding to define the lower and upper bounds of the yellow color range
-          // Reducing noise by using Gaussian Blur function
-          // Using Dilation to improve and connect the yellow regions
-          // Applying erosion to refine the yellow regions and eliminate any small noisy areas
+          // Reduce noise with Gaussian Blur function
+          // Dilation to improve and connect the yellow regions
+          // Apply erosion to refine the yellow regions and eliminate any small noisy areas
             cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
             cv::inRange(hsvCenterImg, YELLOW_MIN, YELLOW_MAX , detectCenterImg);
             cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
