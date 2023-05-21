@@ -69,7 +69,21 @@ cv::Mat detectCenterImg;
 cv::Rect rightROI = cv::Rect(415, 265, 150, 125);
 cv::Rect centerROI = cv::Rect(200, 245, 200, 115);
 
+/*  
+    this function applies Canny edge detection to an input image and searches for contours.
+    It then identifies contours with an area greater than a threshold value, draws them on a separate image, and displays the result in a window. 
+    The function returns true if a cone is found and false otherwise.
 
+    ==============================STEPS====================================
+    Declares two vectors: contours to store the contours found in the image and hierarchy to store the hierarchy of contours.
+    Creates a new cv::Mat object named cannyImg to store the result of applying Canny edge detection to the input image using the provided threshold values.
+    Uses the cv::findContours function to find contours in the cannyImg image.
+    Checks if the area of the current contour (cv::contourArea(contours[i])) is greater than 60. If it is, it means that a potential cone has been found.
+    If a potential cone is found, the contour is drawn. The contour is filled with a blue color represented by the colour scalar.
+    Sets coneFound to true to indicate that a cone has been found.
+    Displays the rightContourImg in a window with the name specified by windowName using the cv::imshow function.
+    Returns the value of coneFound, indicating whether a cone was found in the image.
+*/
 bool isCone(int thresh1, int thresh2, const cv::Mat &img, const std::string& windowName)
 {
 
