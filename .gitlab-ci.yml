@@ -14,20 +14,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Which Docker image shall be used on the GitLab runner?
-image: docker:20.10.8
+image: docker:19.03.3
 
 # Details about how to connect to the Docker service to run this build.
 variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
-  BUILDX_PLATFORM: linux/amd64,linux/arm/v7
   DOCKER_DRIVER: overlay2
-  DOCKER_CLI_EXPERIMENTAL: enabled
-  BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64
-  BUILDX_BUILDER: platformbuilder
+
 
 services:
-  - name: docker:20.10.8-dind
+  - name: docker:19.03.3-dind
     alias: docker
     
 
@@ -59,25 +56,21 @@ release:
   tags:
     - docker-build
   stage: deploy
-  before_script:
-  #- docker info # display system wide info about the Docker
-  - mkdir -p $HOME/.docker/cli-plugins/
-  - wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL
-  - chmod a+x $HOME/.docker/cli-plugins/docker-buildx
-  - "echo -e '{\n  \"experimental\": \"enabled\"\n}' | tee $HOME/.docker/config.json"
-  - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes # runs container and resets the QEMU user emulation to run Docker images for different architectures on   the same host
-  - docker buildx create --use --driver docker-container --name ${BUILDX_BUILDER} --platform=${BUILDX_PLATFORM}
-  - docker buildx inspect --bootstrap
-  - docker buildx ls
-  #- docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
-  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  script:
-    #- docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" .
-    #- docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG"
-    - docker buildx build --platform=${BUILDX_PLATFORM} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+.\d+.\d+$/
-      when: on_success
+      when: always
+  script:
+  - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes 
+  - mkdir -p ~/.docker/cli-plugins
+  - cd ~/.docker/cli-plugins/
+  - wget https://github.com/docker/buildx/releases/download/v0.7.1/buildx-v0.7.1.linux-amd64
+  - mv buildx-v0.7.1.linux-amd64 docker-buildx
+  - chmod 755 docker-buildx
+  - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx create --name platformbuilder --use
+  - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx inspect --bootstrap
+  - cd /builds/courses/dit638/students/2023-group-09
+  - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform "linux/amd64,linux/arm/v7" -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" --push .
+
 
 #test:
   #stage: test
