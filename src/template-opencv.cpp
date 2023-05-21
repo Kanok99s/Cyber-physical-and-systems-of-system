@@ -32,13 +32,12 @@
 
 
 /* HSV values for yellow cones */
-const cv::Scalar YELLOW_MIN(20, 100, 150);
-const cv::Scalar YELLOW_MAX(40, 255, 255);
+const cv::Scalar YELLOW_MIN(20, 80, 150);
+const cv::Scalar YELLOW_MAX(25, 190, 255);
 
 /* HSV values for blue cones */
-const cv::Scalar BLUE_MIN(100, 50, 50);
-const cv::Scalar BLUE_MAX(130, 150, 220);
-
+const cv::Scalar BLUE_MIN(95, 110, 50);
+const cv::Scalar BLUE_MAX(150, 245, 255);
 
 /* Define variables for frames */
 int numberOfFrames = 0;
@@ -396,10 +395,10 @@ and append values to the string variables */
 
 
 
-         /* -------------------------------  Displays information on video  ---------------------------
+         /* -------------------------------  Display information on video  ---------------------------
          displays various information (calculated ground steering, actual ground steering, and timestamp) on the video image,
          and prints group number, and steering wheel angle */
-        
+
         cv::putText(img, calculatedGroundSteering, cv::Point(80, 50), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
         cv::putText(img, actualGroundSteering, cv::Point(80, 80), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
         cv::putText(img, time, cv::Point(80, 110), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
@@ -419,7 +418,7 @@ and append values to the string variables */
         // Create a separate copy of the image to overlay, define a rectangle representing the region of interest (ROI),
         // Draw a filled rectangle on the overlay image with a partially transparent red color,
         // and then overlay the modified image onto the original image using alpha blending.
-        
+
         cv::Mat overlay = img.clone();
         cv::Rect color = cv::Rect(centerROI.x, centerROI.y, centerROI.width, centerROI.height);
         cv::rectangle(overlay, color, cv::Scalar(0, 0, 255, 128), -1);
