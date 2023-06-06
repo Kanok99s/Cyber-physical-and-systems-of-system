@@ -108,8 +108,8 @@ bool isCone(int thresh1, int thresh2, const cv::Mat &img, const std::string& win
     }
   }
 
-      cv::imshow(windowName, rightContourImg);
-      cv::waitKey(1);
+     // cv::imshow(windowName, rightContourImg);
+     //cv::waitKey(1);
     
   return coneFound;
 }
