@@ -27,65 +27,53 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <opencv2/imgproc/imgproc.hpp>
-// Include the string stream library
+// Include the string stream library to use instead of buffer
 #include <sstream>
 
+// HSV values for yellow cones
+int YELLOW_MIN_HUE_VALUE = 15;
+int YELLOW_MAX_HUE_VALUE = 25;
+int YELLOW_MIN_SAT_VALUE = 75;
+int YELLOW_MAX_SAT_VALUE = 185;
+int YELLOW_MIN_VAL_VALUE = 147;
+int YELLOW_MAX_VAL_VALUE = 255;
 
-/* HSV values for yellow cones */
-const cv::Scalar YELLOW_MIN(20, 80, 150);
-const cv::Scalar YELLOW_MAX(25, 190, 255);
+// HSV values for blue cones
+int BLUE_MIN_HUE_VALUE = 100;
+int BLUE_MAX_HUE_VALUE = 140;
+int BLUE_MIN_SAT_VALUE = 120;
+int BLUE_MAX_SAT_VALUE = 255;
+int BLUE_MIN_VAL_VALUE = 40;
+int BLUE_MAX_VAL_VALUE = 255;
 
-/* HSV values for blue cones */
-const cv::Scalar BLUE_MIN(95, 110, 50);
-const cv::Scalar BLUE_MAX(150, 245, 255);
-
-/* Define variables for frames */
-int numberOfFrames = 0;
-int maxFrames = 5;     
+int numberOfFrames = 0; // used to count starting frames
+int maxFrames = 5;      // initial number of frames used to determine direction
 int totalFrames = 0;
 int withinRangeFrames = 0;
 
-/* Variables for steering angle calculation */
-int carDirection = -1; 
+int identifiedShape = 60;     // pixel size used to determine cones
+bool yellowConeFound = false; // flag to check if blue cones have been detected, make it a bool
+float steeringWheelAngle = 0.0;
+float maxSteering = 0.3;
+float minSteering = -0.3;
+int carDirection = -1; // left car direction is negative (counterclockwise), default value
 double alpha = 0.5;
 float turnRight = 0.045;
 float turnLeft = -0.045;
-float steeringWheelAngle = 0.0;
-
- // pixel size to determine cones
-int coneShape = 60;
-bool yellowConeFound = false;
 int blueConeCenter = 0;
 int yellowConeCenter = 0;
 
-/* Define variables for processing yellow color and center detection  */
 cv::Mat yellowHsvImage;
 cv::Mat detectYellowImg;
 cv::Mat hsvCenterImg;
 cv::Mat detectCenterImg;
 
-/* Define the region of interest by providing a rectangular region with 4 parameters: x, y coordinates, width, and height */
 cv::Rect rightROI = cv::Rect(415, 265, 150, 125);
 cv::Rect centerROI = cv::Rect(200, 245, 200, 115);
 
-/*  
-    this function applies Canny edge detection to an input image and searches for contours.
-    It then identifies contours with an area greater than a threshold value, draws them on a separate image, and displays the result in a window. 
-    The function returns true if a cone is found and false otherwise.
 
-    ==============================STEPS====================================
-    Declares two vectors: contours to store the contours found in the image and hierarchy to store the hierarchy of contours.
-    Creates a new cv::Mat object named cannyImg to store the result of applying Canny edge detection to the input image using the provided threshold values.
-    Uses the cv::findContours function to find contours in the cannyImg image.
-    Checks if the area of the current contour (cv::contourArea(contours[i])) is greater than 60. If it is, it means that a potential cone has been found.
-    If a potential cone is found, the contour is drawn. The contour is filled with a blue color represented by the colour scalar.
-    Sets coneFound to true to indicate that a cone has been found.
-    Displays the rightContourImg in a window with the name specified by windowName using the cv::imshow function.
-    Returns the value of coneFound, indicating whether a cone was found in the image.
-*/
-bool isCone(int thresh1, int thresh2, const cv::Mat &img, const std::string& windowName)
+bool isCone(int thresh1, int thresh2, const cv::Mat &img, const std::string &windowName)
 {
-
   std::vector<std::vector<cv::Point>> contours;
   std::vector<cv::Vec4i> hierarchy;
 
@@ -93,6 +81,7 @@ bool isCone(int thresh1, int thresh2, const cv::Mat &img, const std::string& win
   cv::Canny(img, cannyImg, thresh1, thresh2);
 
   cv::findContours(cannyImg, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+  // Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
   cv::Mat rightContourImg = cv::Mat::zeros(cannyImg.rows, cannyImg.cols, CV_8UC3);
 
   bool coneFound = false;
@@ -107,10 +96,10 @@ bool isCone(int thresh1, int thresh2, const cv::Mat &img, const std::string& win
       coneFound = true;
     }
   }
-
-      cv::imshow(windowName, rightContourImg);
-      cv::waitKey(1);
-    
+  //  if (VERBOSE){
+  //       cv::imshow(windowName, rightContourImg);
+  //       cv::waitKey(1);
+  // }
   return coneFound;
 }
 
@@ -173,7 +162,7 @@ int32_t main(int32_t argc, char **argv)
       // Endless loop; end the program by pressing Ctrl-C.
       while (od4.isRunning())
       {
-        
+
         // OpenCV data structure to hold an image.
         cv::Mat img;
 
@@ -194,11 +183,6 @@ int32_t main(int32_t argc, char **argv)
         // Shared memory is unlocked
         sharedMemory->unlock();
 
-        // --------------------------------------   Determine car direction  ------------------------------------------------------------
-        // Capture the right side of the frame to search for yellow cones, 
-        // if a yellow cone is found, it means the car is moving in a clockwise direction,
-        // if not and there is a blue cone, the car is anti-clockwise.
-        
         if (numberOfFrames < maxFrames)
         {
 
@@ -207,14 +191,9 @@ int32_t main(int32_t argc, char **argv)
           std::string rightWindow = "Right Contour Image";
           bool coneFound = false;
           cv::Mat yellowConeImage = img(rightROI);
-          // -----------------------------------   Yellow cones detection -----------------------------------------------------------------
-          // Conversion of the yellow cone image from the BGR color space to the HSV color space
-          // Color thresholding to define the lower and upper bounds of the yelow color range
-          // Reduce noise with Gaussian Blur function
-          // Dilation to improve and connect the yellow regions
-          // Apply erosion to refine the yellow regions and eliminate any small noisy areas
           cv::cvtColor(yellowConeImage, yellowHsvImage, cv::COLOR_BGR2HSV);
-          cv::inRange(yellowHsvImage, YELLOW_MIN, YELLOW_MAX, detectYellowImg);
+          cv::inRange(yellowHsvImage, cv::Scalar(YELLOW_MIN_HUE_VALUE, YELLOW_MIN_SAT_VALUE, YELLOW_MIN_VAL_VALUE),
+                      cv::Scalar(YELLOW_MAX_HUE_VALUE, YELLOW_MAX_SAT_VALUE, YELLOW_MAX_VAL_VALUE), detectYellowImg);
           cv::GaussianBlur(detectYellowImg, detectYellowImg, cv::Size(5, 5), 0);
           cv::dilate(detectYellowImg, detectYellowImg, 0);
           cv::erode(detectYellowImg, detectYellowImg, 0);
@@ -231,14 +210,9 @@ int32_t main(int32_t argc, char **argv)
         {
 
           cv::Mat centreImg = img(centerROI);
-          // -----------------------------------   Center image detection targeting the blue color range -----------------------------------------------------------------
-          // Conversion of the center image from the BGR color space to the HSV color space
-          // Color thresholding to define the lower and upper bounds of the blue color range
-          // Reduce noise with Gaussian Blur function
-          // Dilation to improve and connect the blue regions
-          // Apply erosion to refine the blue regions and eliminate any small noisy areas
           cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
-          cv::inRange(hsvCenterImg, BLUE_MIN, BLUE_MAX, detectCenterImg);
+          cv::inRange(hsvCenterImg, cv::Scalar(BLUE_MIN_HUE_VALUE, BLUE_MIN_SAT_VALUE, BLUE_MIN_VAL_VALUE),
+                      cv::Scalar(BLUE_MAX_HUE_VALUE, BLUE_MAX_SAT_VALUE, BLUE_MAX_VAL_VALUE), detectCenterImg);
           cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
           cv::dilate(detectCenterImg, detectCenterImg, 0);
           cv::erode(detectCenterImg, detectCenterImg, 0);
@@ -248,7 +222,7 @@ int32_t main(int32_t argc, char **argv)
           bool coneFound = false;
           std::string blueWindow = "Blue Center Image";
 
-          bool result = isCone(thresh1, thresh2, detectCenterImg, blueWindow );
+          bool result = isCone(thresh1, thresh2, detectCenterImg, blueWindow);
 
           if (result)
           {
@@ -256,16 +230,17 @@ int32_t main(int32_t argc, char **argv)
 
             if (blueConeCenter == 1)
             {
-              
-                if (carDirection == 1)
-                {
-                  steeringWheelAngle -= turnRight;
-                }
-                else if (carDirection == -1)
-                {
-                  steeringWheelAngle -= turnLeft;
-                }
-              
+              // if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
+              //{
+              if (carDirection == 1)
+              {
+                steeringWheelAngle -= turnRight;
+              }
+              else if (carDirection == -1)
+              {
+                steeringWheelAngle -= turnLeft;
+              }
+              //}
             }
           }
           else
@@ -275,14 +250,10 @@ int32_t main(int32_t argc, char **argv)
 
           if (blueConeCenter == 0)
           {
-          // -----------------------------------   Center image detection targeting the yellow color range -----------------------------------------------------------------
-          // Conversion of the center image from the BGR color space to the HSV color space
-          // Color thresholding to define the lower and upper bounds of the yellow color range
-          // Reduce noise with Gaussian Blur function
-          // Dilation to improve and connect the yellow regions
-          // Apply erosion to refine the yellow regions and eliminate any small noisy areas
+
             cv::cvtColor(centreImg, hsvCenterImg, cv::COLOR_BGR2HSV);
-            cv::inRange(hsvCenterImg, YELLOW_MIN, YELLOW_MAX , detectCenterImg);
+            cv::inRange(hsvCenterImg, cv::Scalar(YELLOW_MIN_HUE_VALUE, YELLOW_MIN_SAT_VALUE, YELLOW_MIN_VAL_VALUE),
+                        cv::Scalar(YELLOW_MAX_HUE_VALUE, YELLOW_MAX_SAT_VALUE, YELLOW_MAX_VAL_VALUE), detectCenterImg);
             cv::GaussianBlur(detectCenterImg, detectCenterImg, cv::Size(5, 5), 0);
             cv::dilate(detectCenterImg, detectCenterImg, 0);
             cv::erode(detectCenterImg, detectCenterImg, 0);
@@ -293,7 +264,7 @@ int32_t main(int32_t argc, char **argv)
 
             std::string yellowWindow = "Yellow Center Image";
 
-          bool result = isCone(thresh1, thresh2, detectCenterImg, yellowWindow );
+            bool result = isCone(thresh1, thresh2, detectCenterImg, yellowWindow);
 
             if (result)
             {
@@ -301,16 +272,18 @@ int32_t main(int32_t argc, char **argv)
 
               if (yellowConeCenter == 1)
               {
-               
-                  if (carDirection == 1)
-                  {
-                    steeringWheelAngle -= turnLeft;
-                  }
-                  else if (carDirection == -1)
-                  {
-                    steeringWheelAngle -= turnRight;
-                  }
-               
+                // if (steeringWheelAngle > minSteering && steeringWheelAngle < maxSteering)
+                //{
+
+                if (carDirection == 1)
+                {
+                  steeringWheelAngle -= turnLeft;
+                }
+                else if (carDirection == -1)
+                {
+                  steeringWheelAngle -= turnRight;
+                }
+                //}
               }
             }
             else
@@ -327,12 +300,6 @@ int32_t main(int32_t argc, char **argv)
 
         numberOfFrames++;
 
-
-/* --------------------------- Creating and formatting strings for printing ---------------------------- 
-Creates string stream input to be used in printing, 
-puts values in the string stream,
-creates the string variables,
-and append values to the string variables */
         std::ostringstream calcGroundSteering;
         std::ostringstream actualSteering;
         std::ostringstream timestamp;
@@ -351,12 +318,9 @@ and append values to the string variables */
         actualGroundSteering.append(actualSteering.str());
         time.append(timestamp.str());
 
-
-        /* ----------------------------------   Checking performance  ----------------------------------- 
-       Checks performance deviation based on steering wheel angle value,
-       If the absolute value of steeringWheelAngle is less than or equal to 0.01, the allowed deviation is set to 0.05,
-       if steeringWheelAngle is greater than 0.01, the allowed deviation is 0.3(percentage of deviation allowed)
-       and updates the number of frames within range and the total frames processed, respectively */
+        cv::Mat hsvImg;
+        img.copyTo(hsvImg);
+        cv::cvtColor(hsvImg, hsvImg, cv::COLOR_BGR2HSV);
 
         double allowedDeviation;
         if (std::abs(steeringWheelAngle) <= 0.01)
@@ -374,12 +338,6 @@ and append values to the string variables */
 
         totalFrames++;
 
-
-         /*  -------------------------------  Displaying performance info  ------------------------------  
-        calculates the percentage of frames within the desired range 
-        and displays a performance message on the image based on the performance value.
-        Color and message varies depending on the 40% threshold of frames and if met or not */
-
         std::string percentMsg = "Performance: ";
         double percent = (double)withinRangeFrames / (double)totalFrames * 100;
         if (percent >= 40)
@@ -393,26 +351,16 @@ and append values to the string variables */
           cv::putText(img, percentMsg, cv::Point(80, 140), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(255, 0, 0), 1);
         }
 
-
-
-         /* -------------------------------  Display information on video  ---------------------------
-         displays various information (calculated ground steering, actual ground steering, and timestamp) on the video image,
-         and prints group number, and steering wheel angle */
-
         cv::putText(img, calculatedGroundSteering, cv::Point(80, 50), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
         cv::putText(img, actualGroundSteering, cv::Point(80, 80), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
         cv::putText(img, time, cv::Point(80, 110), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 250, 154), 1);
 
         {
           std::lock_guard<std::mutex> lck(gsrMutex);
-          std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
-         // std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << std::endl;
+          //  std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << std::endl;
+          std::cout << "group_09;" << sMicro << ";" << steeringWheelAngle << ";" << gsr.groundSteering() << std::endl;
+          //  std::cout << "group_09;"  << "\t" << sMicro << "\t" << steeringWheelAngle << "\t" << gsr.groundSteering() << std::endl;
         }
-
-        cv::Mat hsvImg;
-        img.copyTo(hsvImg);
-        cv::cvtColor(hsvImg, hsvImg, cv::COLOR_BGR2HSV);
-
 
         // --------------------------------------   Display center image  ------------------------------------------------------------
         // Create a separate copy of the image to overlay, define a rectangle representing the region of interest (ROI),
@@ -423,6 +371,7 @@ and append values to the string variables */
         cv::Rect color = cv::Rect(centerROI.x, centerROI.y, centerROI.width, centerROI.height);
         cv::rectangle(overlay, color, cv::Scalar(0, 0, 255, 128), -1);
         cv::addWeighted(overlay, alpha, img, 1 - alpha, 0, img);
+
 
         // Displays debug window on screen
         if (VERBOSE)
