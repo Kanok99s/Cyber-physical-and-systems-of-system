@@ -37,7 +37,6 @@ Our mission is to work together as a unified team and be able to successfully co
 - By engaging in scrum practices, members will give updates on their status and latest work. Every group member will be able to stay informed by checking the team’s one drive and Trello as a collaboration tool. The code commits on git will keep all members updated on individual contributions. The daily stand-up sessions and meetings twice (monday and thursday) will help ensure knowledge transfer among our team members. 
 
  
-
 ### Meetings Attendance 
 
 - Attending the group meetings is an individual responsibility and all members are expected to attend unless for a good reason (i.e. illness, transport delays, family matters) which must be communicated in a timely manner. 
